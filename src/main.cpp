@@ -11,5 +11,4 @@ int main(int argc, char* argv[]) {
     double* grid = new double[nx * ny];
 
     delete[] grid;
-    return 0;
 }
