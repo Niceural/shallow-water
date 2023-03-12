@@ -11,6 +11,22 @@ extern "C" {
         double* x,
         const int& incx
     );
+
+    void F77NAME(dgbmv)(
+        const char& trans,
+        const int& m,
+        const int& n,
+        const int& kl,
+        const int& ku,
+        const double& alpha,
+        double* A,
+        const int& lda,
+        double* x,
+        const int& incx,
+        const int& beta,
+        double* y,
+        const int& incy
+    );
 }
 
 #endif // BLAS_ROUTINES_H
