@@ -30,11 +30,25 @@ class ShallowWater {
         int _ldcd;
         double* _cd; /// Banded matrix to perform the 6th-order central difference scheme with respect to x (size: nx-2 x ny).
 
+        inline int _colMajToArrId(int i, int j);
+
     public:
         ShallowWater(double dt, double t, int nx, int ny, int nc);
         ~ShallowWater();
 
         void setInitialConditions();
+        void timeIntegrate();
+
+        // accessors (for testing)
+        int get_nx();
+        int get_ny();
+
+        double get_dx();
+        double get_dy();
+
+        double get_u(int i, int j);
+        double get_v(int i, int j);
+        double get_h(int i, int j);
 };
 
 #endif // SHALLOW_WATER_H
