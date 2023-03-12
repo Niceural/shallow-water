@@ -21,8 +21,13 @@ ShallowWater::~ShallowWater() {
 }
 
 void ShallowWater::setInitialConditions() {
+    // set u to zero
     F77NAME(dscal)(_n, 0.0, _u, 1);
+
+    // set v to zero
     F77NAME(dscal)(_n, 0.0, _v, 1);
+
+    // set h to the initial surface height for each test cases
     switch (_ic) {
         case 1:
             for (int i = 0; i < _nx; i++) {
