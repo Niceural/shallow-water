@@ -1,23 +1,55 @@
-default: build
+# pasted from https://www.partow.net/programming/makefile/index.html
+CXX      := -c++
+CXXFLAGS := -pedantic-errors -Wall -Wextra -Werror -Wshadow
+LDFLAGS  := -L/usr/lib -lstdc++ -lm -lblas #-lboost_test
+BUILD    := ./build
+OBJ_DIR  := $(BUILD)/objects
+APP_DIR  := $(BUILD)/apps
+TARGET   := program
+INCLUDE  := -Iinclude/
+SRC      :=                      \
+   $(wildcard src/module1/*.cpp) \
+   $(wildcard src/*.cpp)         \
 
-build: ShallowWater
+OBJECTS  := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
+DEPENDENCIES \
+         := $(OBJECTS:.o=.d)
 
-run:
+all: build $(APP_DIR)/$(TARGET)
 
-test: test_ic
+$(OBJ_DIR)/%.o: %.cpp
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -c $< -MMD -o $@
 
-# src
+$(APP_DIR)/$(TARGET): $(OBJECTS)
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) -o $(APP_DIR)/$(TARGET) $^ $(LDFLAGS)
 
-ShallowWater.cpp:
-	g++ -Wall -Wshadow -O2 -o target/ShallowWater.o -c src/ShallowWater.cpp
+-include $(DEPENDENCIES)
 
-# tests
+.PHONY: all build clean debug release info
 
+build:
+	@mkdir -p $(APP_DIR)
+	@mkdir -p $(OBJ_DIR)
 
-test_ic: ShallowWater.cpp initialCondition.cpp
-	g++ -o target/initialCondition target/ShallowWater.o target/initialCondition.o -lblas
-	./target/initialCondition
+debug: CXXFLAGS += -DDEBUG -g
+debug: all
 
-initialCondition.cpp:
-	g++ -Wall -Wshadow -O2 -o target/initialCondition.o -c tests/initialCondition.cpp
-	
+release: CXXFLAGS += -O2
+release: all
+
+test:
+	g++ -Wall -Wshadow -o build/apps/test tests/centralDifference2DTest.cpp src/CentralDifference2D.cpp src/GeneralMatrix.cpp src/GeneralBandedMatrix.cpp -lblas -lboost_unit_test_framework
+	./build/apps/test
+
+clean:
+	-@rm -rvf $(OBJ_DIR)/*
+	-@rm -rvf $(APP_DIR)/*
+
+info:
+	@echo "[*] Application dir: ${APP_DIR}     "
+	@echo "[*] Object dir:      ${OBJ_DIR}     "
+	@echo "[*] Sources:         ${SRC}         "
+	@echo "[*] Objects:         ${OBJECTS}     "
+	@echo "[*] Dependencies:    ${DEPENDENCIES}"
