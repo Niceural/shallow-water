@@ -12,6 +12,21 @@ extern "C" {
         const int& incx
     );
 
+    // general matrix vector multiply
+    void F77NAME(dgemv) (
+        const char& trans,
+        const int& m,
+        const int& n,
+        const double& alpha,
+        const double* A,
+        const int& lda,
+        const double* x,
+        const int& incx,
+        const double& beta,
+        double* y,
+        const int& incy
+    );
+
     void F77NAME(dgbmv)(
         const char& trans,
         const int& m,
@@ -19,13 +34,23 @@ extern "C" {
         const int& kl,
         const int& ku,
         const double& alpha,
-        double* A,
+        const double* A,
         const int& lda,
-        double* x,
+        const double* x,
         const int& incx,
         const int& beta,
         double* y,
         const int& incy
+    );
+
+    void F77NAME(dtpmv) (
+        const char& uplo,
+        const char& trans,
+        const char& diag,
+        const int& n,
+        const double* A,
+        double* x,
+        const int& incx
     );
 }
 
