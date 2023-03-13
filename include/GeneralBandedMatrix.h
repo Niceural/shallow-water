@@ -2,6 +2,7 @@
 #define GENERAL_BANDED_MATRIX_H
 
 #include <stdexcept>
+#include <iostream>
 
 class GeneralBandedMatrix {
     private:
@@ -18,10 +19,17 @@ class GeneralBandedMatrix {
         GeneralBandedMatrix(int, int, int, int, int);
         ~GeneralBandedMatrix();
 
-        double getEl(int i, int j);
+        double & operator[](int id);
         void setEl(int i, int j, double);
-        double* getPointer();
 
+        double operator[](int id) const;
+        int n() const;
+        int ld() const;
+        int kl() const;
+        int ku() const;
+        void print() const;
+        double getEl(int i, int j);
+        double* getPointer();
 };
 
 #endif // GENERAL_BANDED_MATRIX_H
