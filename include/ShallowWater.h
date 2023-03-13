@@ -4,6 +4,7 @@
 #include <cmath>
 #include "blasRoutines.h"
 #include <stdexcept>
+#include "GeneralBandedMatrix.h"
 
 class ShallowWater {
     private:
@@ -25,10 +26,8 @@ class ShallowWater {
         double* _h; /// Matrix of size (nx * ny) of surface height, relative to a mean height of zero, at each grid point.
 
         // central difference
-        int _ncd;
-        int _mcd;
-        int _ldcd;
-        double* _cd; /// Banded matrix to perform the 6th-order central difference scheme with respect to x (size: nx-2 x ny).
+        // GeneralBandedMatrix _cdx; /// Banded matrix to perform the 6th-order central difference scheme with respect to x (size: nx-2 x ny).
+        // GeneralBandedMatrix _cdy; /// Banded matrix to perform the 6th-order central difference scheme with respect to x (size: nx-2 x ny).
 
         inline int _colMajToArrId(int i, int j);
 
