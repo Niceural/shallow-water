@@ -1,4 +1,0 @@
-#ifndef LAPACK_ROUTINES_H
-#define LAPACK_ROUTINES_H
-
-#endif // LAPACK_ROUTINES_H

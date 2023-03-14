@@ -1,6 +1,6 @@
-#include "../include/CentralDifference2D.h"
+#include "../include/ShallowWater.h"
 
-CentralDifference2D::CentralDifference2D(
+ShallowWater::ShallowWater(
     const double dt, const double t,
     const int nx, const int ny,
     const int ic
@@ -64,23 +64,27 @@ CentralDifference2D::CentralDifference2D(
     // _cd_x_t2.print();
 }
 
-CentralDifference2D::~CentralDifference2D() {}
+ShallowWater::~ShallowWater() {}
 
-void CentralDifference2D::integrateWrtX(GeneralMatrix& A, GeneralMatrix& dAdx) {
-    for (int i = 0; i < _n; i++) {
-        F77NAME(dgbmv)('N', _nx, _ny, _cd_x_d.kl(), _cd_x_d.ku(), 1.0, _cd_x_d.getPointer(0), _cd_x_d.ld(), A.getPointer(i*_nx), 1, 0.0, dAdx.getPointer(i*_nx), 1);
+void ShallowWater::integrateWrtX(GeneralMatrix& A, GeneralMatrix& dAdx) {
+    for (int i = 0; i < _ny; i++) {
+        // std::cout << i << std::endl;
+        F77NAME(dgbmv)('N', _nx, _nx, _cd_x_d.kl(), _cd_x_d.ku(), 1.0, _cd_x_d.getPointer(0), _cd_x_d.ld(), A.getPointer(i*_nx), 1, 0.0, dAdx.getPointer(i*_nx), 1);
     }
     // top right triangular matrix
-    for (int i = 0; i < _n; i++) {
+    for (int i = 0; i < _ny; i++) {
         F77NAME(dgemv)('N', _cd_x_t1.m(), _cd_x_t1.n(), 1.0, _cd_x_t1.getPointer(0), 3, A.getPointer(_nx-3 + i*_nx), 1, 1.0, dAdx.getPointer(i*_nx), 1);
     }
     // bottom left triangular matrix
-    for (int i = 0; i < _n; i++) {
+    for (int i = 0; i < _ny; i++) {
         F77NAME(dgemv)('N', _cd_x_t2.m(), _cd_x_t2.n(), 1.0, _cd_x_t2.getPointer(0), 3, A.getPointer(i*_nx), 1, 1.0, dAdx.getPointer(_nx-3 + i*_nx), 1);
     }
 }
 
-void CentralDifference2D::setInitialConditions() {
+void ShallowWater::integrateWrtY(GeneralMatrix&A, GeneralMatrix& dAdy) {
+}
+
+void ShallowWater::setInitialConditions() {
     // set u to zero
     F77NAME(dscal)(_n, 0.0, _U.getPointer(0), 1);
 
@@ -140,7 +144,7 @@ void CentralDifference2D::setInitialConditions() {
     }
 }
 
-void CentralDifference2D::timeIntegrate() {
+void ShallowWater::timeIntegrate() {
     setInitialConditions();
 
     GeneralMatrix k1 = GeneralMatrix(_nx, _ny);
@@ -165,3 +169,6 @@ void CentralDifference2D::timeIntegrate() {
     }
 }
 
+GeneralMatrix ShallowWater::getH() const {
+    return _H;
+}

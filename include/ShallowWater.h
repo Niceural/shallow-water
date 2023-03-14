@@ -1,13 +1,12 @@
-#ifndef CENTRAL_DIFFERENCE_2D_H
-#define CENTRAL_DIFFERENCE_2D_H
+#ifndef SHALLOW_WATER_H
+#define SHALLOW_WATER_H
 
 #include "blasRoutines.h"
-#include "GeneralMatrix.h"
-#include "SquareBandedMatrix.h"
-#include "TriangularPackedMatrix.h"
+#include "matrices/GeneralMatrix.h"
+#include "matrices/SquareBandedMatrix.h"
 #include <cmath>
 
-class CentralDifference2D {
+class ShallowWater {
     private:
         // parameters
         const double _dt; /// Time-step.
@@ -30,9 +29,9 @@ class CentralDifference2D {
         GeneralMatrix _cd_x_t1;
         GeneralMatrix _cd_x_t2;
         // central difference wrt y
-        SquareBandedMatrix _cd_y_d;
-        GeneralMatrix _cd_y_t1;
-        GeneralMatrix _cd_y_t2;
+        // SquareBandedMatrix _cd_y_d;
+        // GeneralMatrix _cd_y_t1;
+        // GeneralMatrix _cd_y_t2;
 
         // central difference matrices
         GeneralMatrix _dUdx;
@@ -45,14 +44,17 @@ class CentralDifference2D {
         int _gbTo1d(int i, int j);
     
     public:
-        CentralDifference2D(const double dt, const double t, const int nx, const int ny, const int nc);
-        ~CentralDifference2D();
+        ShallowWater(const double dt, const double t, const int nx, const int ny, const int nc);
+        ~ShallowWater();
 
         void setInitialConditions();
         void timeIntegrate();
 
         void integrateWrtX(GeneralMatrix& A, GeneralMatrix& dAdx);
         void integrateWrtY(GeneralMatrix& A, GeneralMatrix& dAdy);
+
+        // getters
+        GeneralMatrix getH() const;
 };
 
-#endif // CENTRAL_DIFFERENCE_2D_H
+#endif // SHALLOW_WATER_H

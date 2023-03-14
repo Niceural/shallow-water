@@ -1,4 +1,4 @@
-#include "../include/SquareBandedMatrix.h"
+#include "../../include/matrices/SquareBandedMatrix.h"
 
 SquareBandedMatrix::SquareBandedMatrix(
     const int n, const int kl, const int ku, const int ld

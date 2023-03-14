@@ -1,4 +1,4 @@
-#include "../include/GeneralMatrix.h"
+#include "../../include/matrices/GeneralMatrix.h"
 
 GeneralMatrix::GeneralMatrix(const int m, const int n):
     _m(m), _n(n),
