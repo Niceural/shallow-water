@@ -1,6 +1,6 @@
 #include "../include/GeneralMatrix.h"
 
-GeneralMatrix::GeneralMatrix(int m, int n):
+GeneralMatrix::GeneralMatrix(const int m, const int n):
     _m(m), _n(n),
     _mat(new double[_m * _n]) 
 {
@@ -12,11 +12,17 @@ GeneralMatrix::~GeneralMatrix() {
     delete[] _mat;
 }
 
-inline int GeneralMatrix::_colMajToArrId(int i, int j) {
+void GeneralMatrix::elementwiseMultiplication(const double alpha, GeneralMatrix& b, const double beta, GeneralMatrix& c) {
+    for (int i = 0; i < size(); i++) {
+        c[i] = beta*c[i]  + alpha*_mat[i]*b[i];
+    }
+}
+
+inline int GeneralMatrix::_colMajToArrId(const int i, const int j) const {
     return i + j*_m;
 }
 
-void GeneralMatrix::setEl(int i, int j, double val) {
+void GeneralMatrix::set(int i, int j, double val) {
     _mat[_colMajToArrId(i, j)] = val;
 }
 
@@ -50,10 +56,10 @@ double GeneralMatrix::operator[](int id) const {
     return _mat[id];
 }
 
-double GeneralMatrix::getEl(int i, int j) {
+double GeneralMatrix::get(int i, int j) const {
     return _mat[_colMajToArrId(i, j)];
 }
 
-double* GeneralMatrix::getPointer() {
-    return _mat;
+double* GeneralMatrix::getPointer(const int inc) {
+    return _mat+inc;
 }

@@ -1,24 +1,42 @@
 #include "../include/CentralDifference2D.h"
 
-CentralDifference2D::CentralDifference2D(int m, int n):
-    _m(m), _n(n),
+CentralDifference2D::CentralDifference2D(
+    const double dt, const double t,
+    const int nx, const int ny,
+    const int ic
+):
+    // parameters
+    _dt(dt), _t(t),
+    _nx(nx), _ny(ny), _n(nx * ny),
+    _ic(ic),
+    _dx(1.0), _dy(1.0),
+    _g(9.81),
+
+    // grid
+    _U(GeneralMatrix(nx, ny)), _V(GeneralMatrix(nx, ny)), _H(GeneralMatrix(nx, ny)),
+
     // central difference with respect to x
-    _cd_x_d(GeneralBandedMatrix(m, n, 3, 3, 7)),
-    // _cd_x_t1(TriangularPackedMatrix(3, 'u', false)),
+    _cd_x_d(SquareBandedMatrix(nx, 3, 3, 7)),
     _cd_x_t1(GeneralMatrix(3, 3)),
-    // _cd_x_t2(TriangularPackedMatrix(3, 'l', false)),
     _cd_x_t2(GeneralMatrix(3, 3)),
-    // derivatives
-    _dUdx(GeneralMatrix(m, n)),
-    _dUdy(GeneralMatrix(m, n)),
-    _dVdx(GeneralMatrix(m, n)),
-    _dVdy(GeneralMatrix(m, n)),
-    _dHdx(GeneralMatrix(m, n)),
-    _dHdy(GeneralMatrix(m, n))
+
+    // central difference matrices
+    _dUdx(GeneralMatrix(nx, ny)),
+    _dUdy(GeneralMatrix(nx, ny)),
+    _dVdx(GeneralMatrix(nx, ny)),
+    _dVdy(GeneralMatrix(nx, ny)),
+    _dHdx(GeneralMatrix(nx, ny)),
+    _dHdy(GeneralMatrix(nx, ny))
 {
-    double a = 3.0 / 4.0;
-    double b = - 3.0 / 20.0;
-    double c = 1.0 / 60.0;
+    if (
+        _dt < 0.0 || _t < 0.0 || _t < _dt ||
+        _nx < 2 || _ny < 2 ||
+        _ic < 1 || 4 < _ic
+    ) throw std::invalid_argument("Invalid argument.");
+
+    double a = 3.0 / 4.0 / _dx;
+    double b = - 3.0 / 20.0 / _dx;
+    double c = 1.0 / 60.0 / _dx;
 
     // central difference with respect to x - banded matrix
     double val[] = {
@@ -28,7 +46,7 @@ CentralDifference2D::CentralDifference2D(int m, int n):
     };
     for (int j = 0; j < _cd_x_d.n(); j++) {
         for (int i = 0; i < _cd_x_d.ld(); i++) {
-            _cd_x_d[i + j*_cd_x_d.ld()] = val[i];
+            _cd_x_d.set(i, j, val[i]);
         }
     }
     // _cd_x_d.print();
@@ -43,57 +61,107 @@ CentralDifference2D::CentralDifference2D(int m, int n):
     double t2[] = { c, b, a, 0., c, b, 0., 0., c };
     for (int i = 0; i < _cd_x_t1.size(); i++)
         _cd_x_t2[i] = t2[i];
-    _cd_x_t2.print();
+    // _cd_x_t2.print();
 }
 
 CentralDifference2D::~CentralDifference2D() {}
 
 void CentralDifference2D::integrateWrtX(GeneralMatrix& A, GeneralMatrix& dAdx) {
     for (int i = 0; i < _n; i++) {
-        F77NAME(dgbmv)('N', _m, _n, _cd_x_d.kl(), _cd_x_d.ku(), 1.0, _cd_x_d.getPointer(), _cd_x_d.ld(), A.getPointer() + i*_m, 1, 0.0, dAdx.getPointer() + i*_m, 1);
+        F77NAME(dgbmv)('N', _nx, _ny, _cd_x_d.kl(), _cd_x_d.ku(), 1.0, _cd_x_d.getPointer(0), _cd_x_d.ld(), A.getPointer(i*_nx), 1, 0.0, dAdx.getPointer(i*_nx), 1);
     }
     // top right triangular matrix
     for (int i = 0; i < _n; i++) {
-        F77NAME(dgemv)('N', _cd_x_t1.m(), _cd_x_t1.n(), 1.0, _cd_x_t1.getPointer(), 3, A.getPointer() + _m-3 + i*_m, 1, 1.0, dAdx.getPointer() + _m-3 + i*_m, 1);
+        F77NAME(dgemv)('N', _cd_x_t1.m(), _cd_x_t1.n(), 1.0, _cd_x_t1.getPointer(0), 3, A.getPointer(_nx-3 + i*_nx), 1, 1.0, dAdx.getPointer(i*_nx), 1);
     }
     // bottom left triangular matrix
     for (int i = 0; i < _n; i++) {
-        F77NAME(dgemv)('N', _cd_x_t2.m(), _cd_x_t2.n(), 1.0, _cd_x_t2.getPointer(), 3, A.getPointer() + i*_m, 1, 1.0, dAdx.getPointer() + i*_m, 1);
+        F77NAME(dgemv)('N', _cd_x_t2.m(), _cd_x_t2.n(), 1.0, _cd_x_t2.getPointer(0), 3, A.getPointer(i*_nx), 1, 1.0, dAdx.getPointer(_nx-3 + i*_nx), 1);
     }
 }
 
-// void CentralDifference2D::integrate(const double* U, const double* V, const double* H) {
-//     integrateU(U);
-//     integrateV(V);
-//     integrateH(H);
-// }
+void CentralDifference2D::setInitialConditions() {
+    // set u to zero
+    F77NAME(dscal)(_n, 0.0, _U.getPointer(0), 1);
 
-// void CentralDifference2D::integrateU(const double* U) {
-//     // with respect to x
-//     // with respect to y
-//     for (int i = 0; i < _m; i++) { // iterate over each row
-//         F77NAME(dgbmv)('N', _m, _n, 3, 3, 1.0, _cdx_d, 7, U + i*_n, _m, 0.0, _dUdy + i*_n, _m);
-//     }
-// }
+    // set v to zero
+    F77NAME(dscal)(_n, 0.0, _V.getPointer(0), 1);
 
-// void CentralDifference2D::integrateV(const double* V) {
-//     // with respect to x
-//     for (int i = 0; i < _n; i++) { // iterate over each column
-//         F77NAME(dgbmv)('N', _m, _n, 3, 3, 1.0, _cdx_d, 7, V + i*_m, 1, 0.0, _dVdx + i*_m, 1);
-//     }
-//     // with respect to y
-//     for (int i = 0; i < _m; i++) { // iterate over each row
-//         F77NAME(dgbmv)('N', _m, _n, 3, 3, 1.0, _cdx_d, 7, V + i*_n, _m, 0.0, _dVdy + i*_n, _m);
-//     }
-// }
+    // set h to the initial surface height for each test cases
+    switch (_ic) {
+        case 1:
+            // plane waves propagating in x
+            for (int i = 0; i < _nx; i++) {
+                double x = i * _dx;
+                x -= 50.0;
+                x *= x;
+                double h = 10.0 + std::exp(-x / 25.0);
+                for (int j = 0; j < _ny; j++) {
+                    _H.set(i, j, h);
+                }
+            }
+            break;
+        case 2:
+            // plane waves propagating in y
+            for (int j = 0; j < _ny; j++) {
+                double y = j * _dy;
+                y -= 50.0;
+                y *= y;
+                double h = 10.0 + std::exp(-y / 25.0);
+                for (int i = 0; i < _nx; i++) {
+                    _H.set(i, j, h);
+                }
+            }
+            break;
+        case 3:
+            // single droplet
+            for (int j = 0; j < _ny; j++) {
+                for (int i = 0; i < _nx; i++) {
+                    double x = _dx * i; double y = _dy * j;
+                    x -= 50.0; y -= 50.0;
+                    x *= x; y *= y;
+                    double h = 10.0 + std::exp(-(x + y) / 25.0);
+                    _H.set(i, j, h);
+                }
+            }
+            break;
+        default:
+            // double droplet
+            for (int j = 0; j < _ny; j++) {
+                for (int i = 0; i < _nx; i++) {
+                    double x = _dx * i; double y = _dy * j;
+                    double h = 10.0 + 
+                        std::exp(-((x-25.0)*(x-25.0) + (y-25.0)*(y-25.0)) / 25.0) +
+                        std::exp(-((x-75.0)*(x-75.0) + (y-75.0)*(y-75.0)) / 25.0);
+                    _H.set(i, j, h);
+                }
+            }
+            break;
+    }
+}
 
-// void CentralDifference2D::integrateH(const double* H) {
-//     // with respect to x
-//     for (int i = 0; i < _n; i++) { // iterate over each column
-//         F77NAME(dgbmv)('N', _m, _n, 3, 3, 1.0, _cdx_d, 7, H + i*_m, 1, 0.0, _dHdx + i*_m, 1);
-//     }
-//     // with respect to y
-//     for (int i = 0; i < _m; i++) { // iterate over each row
-//         F77NAME(dgbmv)('N', _m, _n, 3, 3, 1.0, _cdx_d, 7, H + i*_n, _m, 0.0, _dHdy + i*_n, _m);
-//     }
-// }
+void CentralDifference2D::timeIntegrate() {
+    setInitialConditions();
+
+    GeneralMatrix k1 = GeneralMatrix(_nx, _ny);
+    GeneralMatrix k2 = GeneralMatrix(_nx, _ny);
+    GeneralMatrix k3 = GeneralMatrix(_nx, _ny);
+    GeneralMatrix k4 = GeneralMatrix(_nx, _ny);
+
+    double t = 0.0;
+    while (t < _t) {
+        // perform central difference
+        integrateWrtX(_U, _dUdx);
+        integrateWrtY(_U, _dUdy);
+
+        // k1 = f(u_n, v_n, k_n)
+        _U.elementwiseMultiplication(-1.0, _dUdx, 0.0, k1); // k1 = - u * dUdx
+        _V.elementwiseMultiplication(-1.0, _dUdy, 1.0, k1); // k1 = k1 - v * dUdy
+        F77NAME(daxpy)(k1.size(), -_g, _dHdx.getPointer(0), 1, k1.getPointer(0), 1); // k1 = k1 - g*dHdx
+
+        // k2 = f(u_n + dt*k1/2, v_n, h_n)
+        
+        t += _dt;
+    }
+}
+

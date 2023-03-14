@@ -3,20 +3,38 @@
 
 #include "blasRoutines.h"
 #include "GeneralMatrix.h"
-#include "GeneralBandedMatrix.h"
+#include "SquareBandedMatrix.h"
 #include "TriangularPackedMatrix.h"
+#include <cmath>
 
 class CentralDifference2D {
     private:
-        int _m;
-        int _n;
+        // parameters
+        const double _dt; /// Time-step.
+        const double _t; /// Total integration time.
+        const int _nx; /// Number of grid points in x.
+        const int _ny; /// Number of grid points in y.
+        const int _n; /// Total number of grid points.
+        const int _ic; /// Index of the initial condition to use (1-4).
+        const double _dx; /// Constant point spacing along x.
+        const double _dy; /// Constant point spacing along y.
+        const double _g; /// Acceleration due to gravity.
 
-        GeneralBandedMatrix _cd_x_d;
-        // TriangularPackedMatrix _cd_x_t1;
+        // grid
+        GeneralMatrix _U; /// Matrix (nx * ny) of x-component of velocity.
+        GeneralMatrix _V; /// Matrix (nx * ny) of y-component of velocity.
+        GeneralMatrix _H; /// Matrix (nx * ny) of surface height.
+
+        // central difference wrt x
+        SquareBandedMatrix _cd_x_d;
         GeneralMatrix _cd_x_t1;
-        // TriangularPackedMatrix _cd_x_t2;
         GeneralMatrix _cd_x_t2;
+        // central difference wrt y
+        SquareBandedMatrix _cd_y_d;
+        GeneralMatrix _cd_y_t1;
+        GeneralMatrix _cd_y_t2;
 
+        // central difference matrices
         GeneralMatrix _dUdx;
         GeneralMatrix _dUdy;
         GeneralMatrix _dVdx;
@@ -27,15 +45,14 @@ class CentralDifference2D {
         int _gbTo1d(int i, int j);
     
     public:
-        CentralDifference2D(int m, int n);
+        CentralDifference2D(const double dt, const double t, const int nx, const int ny, const int nc);
         ~CentralDifference2D();
 
-        // void integrate(const double* U, const double* V, const double* H);
-        // void integrateU(const double* U);
-        // void integrateV(const double* V);
-        // void integrateH(const double* H);
+        void setInitialConditions();
+        void timeIntegrate();
 
         void integrateWrtX(GeneralMatrix& A, GeneralMatrix& dAdx);
+        void integrateWrtY(GeneralMatrix& A, GeneralMatrix& dAdy);
 };
 
 #endif // CENTRAL_DIFFERENCE_2D_H

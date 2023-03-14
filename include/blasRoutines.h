@@ -12,6 +12,16 @@ extern "C" {
         const int& incx
     );
 
+    // y = a*x + y
+    void F77NAME(daxpy) (
+        const int& n,
+        const double& a,
+        const double* x,
+        const int& incx,
+        double* y,
+        const int& incy
+    );
+
     // general matrix vector multiply
     void F77NAME(dgemv) (
         const char& trans,
