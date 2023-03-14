@@ -1,53 +1,58 @@
-#ifndef SHALLOW_WATER_H
-#define SHALLOW_WATER_H
+#ifndef CENTRAL_DIFFERENCE_2D_H
+#define CENTRAL_DIFFERENCE_2D_H
 
-#include <cmath>
 #include "blasRoutines.h"
-#include <stdexcept>
-#include "GeneralBandedMatrix.h"
+#include "GeneralMatrix.h"
+#include "SquareBandedMatrix.h"
+#include "TriangularPackedMatrix.h"
+#include <cmath>
 
-class ShallowWater {
+class CentralDifference2D {
     private:
-        // inputs
-        double _dt; /// Time-step to use.
-        double _t; /// Total integration time.
-        int _nx; /// Number of grid points in x.
-        int _ny; /// Number of grid points in y.
-        int _ic; /// Index of the initial condition to use (1-4).
+        // parameters
+        const double _dt; /// Time-step.
+        const double _t; /// Total integration time.
+        const int _nx; /// Number of grid points in x.
+        const int _ny; /// Number of grid points in y.
+        const int _n; /// Total number of grid points.
+        const int _ic; /// Index of the initial condition to use (1-4).
+        const double _dx; /// Constant point spacing along x.
+        const double _dy; /// Constant point spacing along y.
+        const double _g; /// Acceleration due to gravity.
 
-        int _n; /// Total number of grid points (nx * ny).
-        double _dx; /// Constant point spacing in x.
-        double _dy; /// Constant point spacing in y.
-        double _g; /// Acceleration due to gravity.
+        // grid
+        GeneralMatrix _U; /// Matrix (nx * ny) of x-component of velocity.
+        GeneralMatrix _V; /// Matrix (nx * ny) of y-component of velocity.
+        GeneralMatrix _H; /// Matrix (nx * ny) of surface height.
 
-        // 
-        double* _u; /// Matrix of size (nx * ny) of x-component of velocity at each grid point.
-        double* _v; /// Matrix of size (nx * ny) of y-component of velocity at each grid point.
-        double* _h; /// Matrix of size (nx * ny) of surface height, relative to a mean height of zero, at each grid point.
+        // central difference wrt x
+        SquareBandedMatrix _cd_x_d;
+        GeneralMatrix _cd_x_t1;
+        GeneralMatrix _cd_x_t2;
+        // central difference wrt y
+        SquareBandedMatrix _cd_y_d;
+        GeneralMatrix _cd_y_t1;
+        GeneralMatrix _cd_y_t2;
 
-        // central difference
-        // GeneralBandedMatrix _cdx; /// Banded matrix to perform the 6th-order central difference scheme with respect to x (size: nx-2 x ny).
-        // GeneralBandedMatrix _cdy; /// Banded matrix to perform the 6th-order central difference scheme with respect to x (size: nx-2 x ny).
+        // central difference matrices
+        GeneralMatrix _dUdx;
+        GeneralMatrix _dUdy;
+        GeneralMatrix _dVdx;
+        GeneralMatrix _dVdy;
+        GeneralMatrix _dHdx;
+        GeneralMatrix _dHdy;
 
-        inline int _colMajToArrId(int i, int j);
-
+        int _gbTo1d(int i, int j);
+    
     public:
-        ShallowWater(double dt, double t, int nx, int ny, int nc);
-        ~ShallowWater();
+        CentralDifference2D(const double dt, const double t, const int nx, const int ny, const int nc);
+        ~CentralDifference2D();
 
         void setInitialConditions();
         void timeIntegrate();
 
-        // accessors (for testing)
-        int get_nx();
-        int get_ny();
-
-        double get_dx();
-        double get_dy();
-
-        double get_u(int i, int j);
-        double get_v(int i, int j);
-        double get_h(int i, int j);
+        void integrateWrtX(GeneralMatrix& A, GeneralMatrix& dAdx);
+        void integrateWrtY(GeneralMatrix& A, GeneralMatrix& dAdy);
 };
 
-#endif // SHALLOW_WATER_H
+#endif // CENTRAL_DIFFERENCE_2D_H
