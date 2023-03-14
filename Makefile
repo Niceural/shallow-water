@@ -2,6 +2,9 @@ CC = g++
 CFLAGS = -O2 -Wall -Wshadow
 LIBS = -lblas -lboost_unit_test_framework
 
+test1:
+	${CC} ${CFLAGS} -o target/test1 src/main.cpp -lboost_program_options
+
 GeneralMatrix.o:
 	${CC} ${CFLAGS} -o target/GeneralMatrix.o -c src/matrices/GeneralMatrix.cpp
 
