@@ -4,7 +4,11 @@
 #include "blasRoutines.h"
 #include "matrices/GeneralMatrix.h"
 #include "matrices/SquareBandedMatrix.h"
+#include "CentralDifference.h"
 #include <cmath>
+#include <string>
+#include <iostream>
+#include <fstream>
 
 class ShallowWater {
     private:
@@ -24,26 +28,7 @@ class ShallowWater {
         GeneralMatrix _V; /// Matrix (nx * ny) of y-component of velocity.
         GeneralMatrix _H; /// Matrix (nx * ny) of surface height.
 
-        // central difference wrt x
-        void _generateCdWrtX();
-        SquareBandedMatrix _cd_x_d;
-        GeneralMatrix _cd_x_t1;
-        GeneralMatrix _cd_x_t2;
-        // central difference wrt y
-        void _generateCdWrtY();
-        SquareBandedMatrix _cd_y_d;
-        GeneralMatrix _cd_y_t1;
-        GeneralMatrix _cd_y_t2;
-
-        // central difference matrices
-        GeneralMatrix _dUdx;
-        GeneralMatrix _dUdy;
-        GeneralMatrix _dVdx;
-        GeneralMatrix _dVdy;
-        GeneralMatrix _dHdx;
-        GeneralMatrix _dHdy;
-
-        int _gbTo1d(int i, int j);
+        CentralDifference _cd;
     
     public:
         ShallowWater(const double dt, const double t, const int nx, const int ny, const int nc);
@@ -52,8 +37,7 @@ class ShallowWater {
         void setInitialConditions();
         void timeIntegrate();
 
-        void integrateWrtX(GeneralMatrix& A, GeneralMatrix& dAdx);
-        void integrateWrtY(GeneralMatrix& A, GeneralMatrix& dAdy);
+        void exportData(const std::string& fname);
 
         // getters
         GeneralMatrix getH() const;

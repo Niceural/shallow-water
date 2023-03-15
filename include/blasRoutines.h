@@ -4,6 +4,15 @@
 #define F77NAME(x) x##_
 
 extern "C" {
+    // copy x into y
+    void F77NAME(dcopy) (
+        const int& n,
+        const double* x,
+        const int& incx,
+        double* y,
+        const int& incy
+    );
+
     // x = alpha * x
     void F77NAME(dscal) (
         const int& n,
@@ -62,6 +71,22 @@ extern "C" {
         double* x,
         const int& incx
     );
+
+    // symmetric banded matrix vector product
+    void F77NAME(dsbmv) (
+        const char& UPLO, // 'U' for upper diagonal, 'L' for lower diagonal
+        const int& N, // order of matrix A
+        const int& K, // number of super-diagonals of the matrix A
+        const double& ALPHA, // scalar multiplying A
+        const double* A, // array of dimensions (LDA, A)
+        const int& LDA,
+        const double* X, // vector X
+        const int& INCX, // increment of X
+        const double& BETA, // scalar multiplying Y (careful to Y when non zero)
+        double* Y, // vector Y
+        const int& INCY // increment of Y
+    );
+
 }
 
 #endif // BLAS_ROUTINES_H

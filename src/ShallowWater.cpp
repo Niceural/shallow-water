@@ -14,118 +14,16 @@ ShallowWater::ShallowWater(
 
     // grid
     _U(GeneralMatrix(nx, ny)), _V(GeneralMatrix(nx, ny)), _H(GeneralMatrix(nx, ny)),
-
-    // central difference with respect to x
-    _cd_x_d(SquareBandedMatrix(nx, 3, 3, 7)),
-    _cd_x_t1(GeneralMatrix(3, 3)),
-    _cd_x_t2(GeneralMatrix(3, 3)),
-    // central difference with respect to y
-    _cd_y_d(SquareBandedMatrix(ny, 3, 3, 7)),
-    _cd_y_t1(GeneralMatrix(3, 3)),
-    _cd_y_t2(GeneralMatrix(3, 3)),
-
-    // central difference matrices
-    _dUdx(GeneralMatrix(nx, ny)),
-    _dUdy(GeneralMatrix(nx, ny)),
-    _dVdx(GeneralMatrix(nx, ny)),
-    _dVdy(GeneralMatrix(nx, ny)),
-    _dHdx(GeneralMatrix(nx, ny)),
-    _dHdy(GeneralMatrix(nx, ny))
+    _cd(CentralDifference(_nx, _ny, _dx, _dy))
 {
     if (
         _dt < 0.0 || _t < 0.0 || _t < _dt ||
         _nx < 2 || _ny < 2 ||
         _ic < 1 || 4 < _ic
     ) throw std::invalid_argument("Invalid argument.");
-
-}
-
-void ShallowWater::_generateCdWrtX() {
-    double a = 3.0 / 4.0 / _dx;
-    double b = - 3.0 / 20.0 / _dx;
-    double c = 1.0 / 60.0 / _dx;
-
-    // central difference with respect to x - banded matrix
-    double val[] = {
-        c, b, a,
-        0.0,
-        -a, -b, -c
-    };
-    for (int j = 0; j < _cd_x_d.n(); j++) {
-        for (int i = 0; i < _cd_x_d.ld(); i++) {
-            _cd_x_d.set(i, j, val[i]);
-        }
-    }
-
-    // central difference with respect to x - top right triangular matrix
-    double t1[] = { -c, 0., 0. , -b, -c, 0., -a, -b, -c };
-    for (int i = 0; i < _cd_x_t1.size(); i++)
-        _cd_x_t1[i] = t1[i];
-
-    // central difference with respect to x - bottom left triangular matrix
-    double t2[] = { c, b, a, 0., c, b, 0., 0., c };
-    for (int i = 0; i < _cd_x_t1.size(); i++)
-        _cd_x_t2[i] = t2[i];
-}
-
-void ShallowWater::_generateCdWrtY() {
-    double a = 3.0 / 4.0 / _dy;
-    double b = - 3.0 / 20.0 / _dy;
-    double c = 1.0 / 60.0 / _dy;
-
-    // central difference with respect to x - banded matrix
-    double val[] = {
-        c, b, a,
-        0.0,
-        -a, -b, -c
-    };
-    for (int j = 0; j < _cd_y_d.n(); j++) {
-        for (int i = 0; i < _cd_y_d.ld(); i++) {
-            _cd_y_d.set(i, j, val[i]);
-        }
-    }
-
-    // central difference with respect to x - top right triangular matrix
-    double t1[] = { -c, 0., 0. , -b, -c, 0., -a, -b, -c };
-    for (int i = 0; i < _cd_y_t1.size(); i++)
-        _cd_y_t1[i] = t1[i];
-
-    // central difference with respect to x - bottom left triangular matrix
-    double t2[] = { c, b, a, 0., c, b, 0., 0., c };
-    for (int i = 0; i < _cd_y_t1.size(); i++)
-        _cd_y_t2[i] = t2[i];
 }
 
 ShallowWater::~ShallowWater() {}
-
-void ShallowWater::integrateWrtX(GeneralMatrix& A, GeneralMatrix& dAdx) {
-    for (int i = 0; i < _ny; i++) {
-        // std::cout << i << std::endl;
-        F77NAME(dgbmv)('N', _nx, _nx, _cd_x_d.kl(), _cd_x_d.ku(), 1.0, _cd_x_d.getPointer(0), _cd_x_d.ld(), A.getPointer(i*_nx), 1, 0.0, dAdx.getPointer(i*_nx), 1);
-    }
-    // top right triangular matrix
-    for (int i = 0; i < _ny; i++) {
-        F77NAME(dgemv)('N', _cd_x_t1.m(), _cd_x_t1.n(), 1.0, _cd_x_t1.getPointer(0), 3, A.getPointer(_nx-3 + i*_nx), 1, 1.0, dAdx.getPointer(i*_nx), 1);
-    }
-    // bottom left triangular matrix
-    for (int i = 0; i < _ny; i++) {
-        F77NAME(dgemv)('N', _cd_x_t2.m(), _cd_x_t2.n(), 1.0, _cd_x_t2.getPointer(0), 3, A.getPointer(i*_nx), 1, 1.0, dAdx.getPointer(_nx-3 + i*_nx), 1);
-    }
-}
-
-void ShallowWater::integrateWrtY(GeneralMatrix& A, GeneralMatrix& dAdy) {
-    for (int i = 0; i < _nx; i++) {
-        F77NAME(dgbmv)('N', _cd_y_d.n(), _cd_y_d.n(), _cd_y_d.kl(), _cd_y_d.ku(), 1.0, _cd_y_d.getPointer(0), _cd_y_d.ld(), A.getPointer(i), A.m(), 0.0, dAdy.getPointer(i), A.m());
-    }
-    // top right triangular matrix
-    for (int i = 0; i < _nx; i++) {
-        F77NAME(dgemv)('N', _cd_y_t1.m(), _cd_y_t1.n(), 1.0, _cd_y_t1.getPointer(0), 3, A.getPointer(A.n()-3 + i*A.n()), A.m(), 1.0, dAdy.getPointer(i*A.n()), A.m());
-    }
-    // bottom left triangular matrix
-    for (int i = 0; i < _nx; i++) {
-        F77NAME(dgemv)('N', _cd_x_t2.m(), _cd_x_t2.n(), 1.0, _cd_x_t2.getPointer(0), 3, A.getPointer(i*A.n()), A.m(), 1.0, dAdy.getPointer(A.n()-3 + i*A.n()), A.m());
-    }
-}
 
 void ShallowWater::setInitialConditions() {
     // set u to zero
@@ -224,6 +122,12 @@ void ShallowWater::timeIntegrate() {
     double t = 0.0;
     while (t < _t) {
         // perform central difference
+        _cd.performWrtX(_U, dUdx);
+        _cd.performWrtX(_V, dVdx);
+        _cd.performWrtX(_H, dHdx);
+        _cd.performWrtY(_U, dUdy);
+        _cd.performWrtY(_V, dVdy);
+        _cd.performWrtY(_H, dHdy);
 
         //--------- k1
         // copy U, V, H, to tempU, tempV, tempH
@@ -344,6 +248,25 @@ void ShallowWater::timeIntegrate() {
 
         t += _dt;
     }
+}
+
+void ShallowWater::exportData(const std::string& fname) {
+    std::ofstream file;
+    file.open(fname);
+
+    for (int j = 0; j < _ny; j++) {
+        double y = j * _dy;            
+        for (int i = 0; i < _nx; i++) {
+            double x = i * _dx;
+            file << x << " " << y << " ";
+            file << _U.get(i, j) << " ";
+            file << _V.get(i, j) << " ";
+            file << _H.get(i, j) << std::endl;
+        }
+        file << std::endl;
+    }
+
+    file.close();
 }
 
 GeneralMatrix ShallowWater::getH() const {

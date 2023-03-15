@@ -1,11 +1,12 @@
 #include <iostream>
 #include <boost/program_options.hpp>
+#include "../include/ShallowWater.h"
 
 namespace po = boost::program_options;
 
 int main(int argc, char** argv) {
-    double dt = 0.0; double t = 0.0;
-    int nx = 0; int ny = 0;
+    double dt = 0.1; double t = 100.0;
+    int nx = 100; int ny = 100;
     int ic = 1;
 
     po::options_description desc("Allowed options");
@@ -26,7 +27,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-
+    ShallowWater sw(dt, t, nx, ny, ic);
+    sw.setInitialConditions();
+    sw.timeIntegrate();
+    sw.exportData("output.txt");
 
     return 0;
 }

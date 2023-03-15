@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <iostream>
-#include "blasRoutines.h"
+#include "../blasRoutines.h"
 
 class GeneralMatrix {
     private:

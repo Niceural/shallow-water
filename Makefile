@@ -1,70 +1,61 @@
+# inspired from https://www.partow.net/programming/makefile/index.html
 CXX      := g++ # -c++
 CXXFLAGS := -std=c++11 -pedantic-errors -Wall -Wextra -Werror -Wshadow
+LDFLAGS  := -L/usr/lib -lstdc++ -lm -lblas -lboost_program_options
 BUILD    := ./build
+OBJ_DIR  := $(BUILD)/objects
+APP_DIR  := $(BUILD)/apps
+TARGET   := shallowWater
 INCLUDE  := -Iinclude/
-
-# src variables
-SRC_TARGET   := shallowWater
-SRC_LDFLAGS  := -L/usr/lib -lstdc++ -lm -lblas -lboost_program_options
-SRC_OBJ_DIR  := $(BUILD)/srcObjects
-SRC_BIN_DIR  := $(BUILD)/srcBin
-SRCS      :=                      \
+SRC      :=                      \
    $(wildcard src/matrices/*.cpp) \
-   $(wildcard src/*.cpp)
-SRC_OBJECTS  := $(SRCS:%.cpp=$(SRC_OBJ_DIR)/%.o)
+   $(wildcard src/*.cpp)         \
 
-# tests variables
-TEST_LDFLAGS  := -L/usr/lib -lstdc++ -lm -lblas -lboost_unit_test_framework
-TEST_OBJ_DIR  := $(BUILD)/testObjects
-TEST_BIN_DIR  := $(BUILD)/testBin
 TESTS := $(wildcard tests/*.cpp)
-TEST_OBJECTS  := $(TESTS:%.cpp=$(TEST_OBJ_DIR)/%.o)
-TEST_TARGETS :=  $(TESTS:%.cpp=$(TEST_BIN_DIR)/%)
 
-# src targets
+OBJECTS  := $(SRC:%.cpp=$(OBJ_DIR)/%.o)
+DEPENDENCIES := $(OBJECTS:.o=.d)
 
-# 
-build: init $(SRC_BIN_DIR)/$(SRC_TARGET)
+all: build $(APP_DIR)/$(TARGET)
 
-$(SRC_OBJ_DIR)/%.o: %.cpp
+$(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -c $< -MMD -o $@
 
-$(SRC_BIN_DIR)/$(SRC_TARGET): $(SRC_OBJECTS)
+$(APP_DIR)/$(TARGET): $(OBJECTS)
 	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -o $(SRC_BIN_DIR)/$(TARGET) $^ $(SRC_LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $(APP_DIR)/$(TARGET) $^ $(LDFLAGS)
 
+-include $(DEPENDENCIES)
 
-.PHONY: build clean debug release init test
+.PHONY: all build clean debug release info
+
+build:
+	@mkdir -p $(APP_DIR)
+	@mkdir -p $(OBJ_DIR)
 
 debug: CXXFLAGS += -DDEBUG -g
-debug: build
+debug: all
 
 release: CXXFLAGS += -O2
-release: build
-
-# test targets
-test: $(TEST_TARGETS)
-
-$(TEST_OBJ_DIR)/%.o: %.cpp
-	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) $(INCLUDE) -c $< -MMD -o $@
-
-$(TEST_TARGETS): $(TEST_OBJECTS)
-	@mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -o $(TEST_TARGETS) $^ $(TEST_LDFLAGS)
-
-init:
-	@mkdir -p $(SRC_BIN_DIR)
-	@mkdir -p $(SRC_OBJ_DIR)
-	@mkdir -p $(TEST_BIN_DIR)
-	@mkdir -p $(TEST_OBJ_DIR)
+release: all
 
 clean:
-	-@rm -rvf $(SRC_BIN_DIR)/*
-	-@rm -rvf $(SRC_OBJ_DIR)/*
-	-@rm -rvf $(TEST_BIN_DIR)/*
-	-@rm -rvf $(TEST_OBJ_DIR)/*
+	-@rm -rvf $(OBJ_DIR)/*
+	-@rm -rvf $(APP_DIR)/*
+
+info:
+	@echo "[*] Application dir: ${APP_DIR}     "
+	@echo "[*] Object dir:      ${OBJ_DIR}     "
+	@echo "[*] Sources:         ${SRC}         "
+	@echo "[*] Objects:         ${OBJECTS}     "
+	@echo "[*] Dependencies:    ${DEPENDENCIES}"
+
+test1: release
+	./build/apps/shallowWater --dt 0.1 --T 1.0 --Nx 100 --Ny 100 --ic 1
+
+test3: release
+	./build/apps/shallowWater --dt 0.1 --T 80.0 --Nx 100 --Ny 100 --ic 3
 
 # CC = g++
 # CFLAGS = -Wall -Wshadow
