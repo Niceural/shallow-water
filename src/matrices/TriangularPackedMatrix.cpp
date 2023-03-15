@@ -1,4 +1,4 @@
-#include "../include/TriangularPackedMatrix.h"
+#include "../../include/matrices/TriangularPackedMatrix.h"
 
 TriangularPackedMatrix::TriangularPackedMatrix(int n, char uplo, bool unitTri):
     _n(n), _size(_n * (_n+1) / 2), _uplo(uplo), _unitTri(unitTri),

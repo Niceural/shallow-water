@@ -25,13 +25,15 @@ class ShallowWater {
         GeneralMatrix _H; /// Matrix (nx * ny) of surface height.
 
         // central difference wrt x
+        void _generateCdWrtX();
         SquareBandedMatrix _cd_x_d;
         GeneralMatrix _cd_x_t1;
         GeneralMatrix _cd_x_t2;
         // central difference wrt y
-        // SquareBandedMatrix _cd_y_d;
-        // GeneralMatrix _cd_y_t1;
-        // GeneralMatrix _cd_y_t2;
+        void _generateCdWrtY();
+        SquareBandedMatrix _cd_y_d;
+        GeneralMatrix _cd_y_t1;
+        GeneralMatrix _cd_y_t2;
 
         // central difference matrices
         GeneralMatrix _dUdx;
