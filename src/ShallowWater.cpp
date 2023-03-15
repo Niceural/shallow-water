@@ -205,7 +205,7 @@ void ShallowWater::timeIntegrate() {
         F77NAME(dcopy)(_U.size(), _U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(dcopy)(_V.size(), _V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(dcopy)(_H.size(), _H.getPointer(0), 1, tempH.getPointer(0), 1);
-        // a_n += dt * k3 / 2
+        // a_n += dt * k3
         F77NAME(daxpy)(tempU.size(), _dt, k3U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(daxpy)(tempV.size(), _dt, k3V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(daxpy)(tempH.size(), _dt, k3H.getPointer(0), 1, tempH.getPointer(0), 1);
