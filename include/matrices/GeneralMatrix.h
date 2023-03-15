@@ -3,12 +3,14 @@
 
 #include <stdexcept>
 #include <iostream>
+#include "blasRoutines.h"
 
 class GeneralMatrix {
     private:
         const int _m; /// Number of rows of the matrix.
         const int _n; /// Number of columns of the matrix.
-        double* _mat; /// Elements.
+        const int _size; /// Number of allocated elements (m x n).
+        double* _mat; /// Column major storage of the matrix.
 
         inline int _colMajToArrId(const int i, const int j) const;
 
@@ -16,7 +18,9 @@ class GeneralMatrix {
         GeneralMatrix(const int m, const int n);
         ~GeneralMatrix();
 
-        void elementwiseMultiplication(const double alpha, GeneralMatrix& b, const double beta, GeneralMatrix& c);
+        // element wise multiplication
+        friend void elementWiseMultiplicationLoop(const double alpha, const GeneralMatrix& A, const GeneralMatrix& B, const double beta, GeneralMatrix& C);
+        friend void elementWiseMultiplicationBlas(const double alpha, GeneralMatrix& A, GeneralMatrix& B, const double beta, GeneralMatrix& C);
 
         // setters
         double & operator[](int id);
@@ -26,10 +30,11 @@ class GeneralMatrix {
         // getters
         int m() const;
         int n() const;
-        void print() const;
         int size() const;
-        double operator[](int id) const;
-        double get(int i, int j) const;
+        double operator[](const int id) const;
+        double get(const int i, const int j) const;
+        const double* getPointer(const int inc) const;
+        void print() const;
 };
 
 #endif // GENERAL_MATRIX_H
