@@ -40,6 +40,7 @@ class ShallowWater {
         void exportData(const std::string& fname);
 
         // getters
+        void test();
         GeneralMatrix getH() const;
 };
 

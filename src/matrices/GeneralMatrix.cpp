@@ -13,6 +13,8 @@ GeneralMatrix::~GeneralMatrix() {
 //------------------------------------- private functions
 
 inline int GeneralMatrix::_colMajToArrId(const int i, const int j) const {
+    if (m() <= i || n() <= j)
+        throw std::out_of_range("");
     return i + j*_m;
 }
 
@@ -30,14 +32,20 @@ void elementWiseMultiplicationBlas(const double alpha, const GeneralMatrix& A, c
 //------------------------------------- setters
 
 void GeneralMatrix::set(const int i, const int j, const double val) {
+    if (m() <= i || n() <= j)
+        throw std::out_of_range("");
     _mat[_colMajToArrId(i, j)] = val;
 }
 
 double & GeneralMatrix::operator[](const int id) {
+    if (size() <= id)
+        throw std::out_of_range("");
     return _mat[id];
 }
 
 double* GeneralMatrix::getPointer(const int inc) {
+    if (size() <= inc)
+        throw std::out_of_range("");
     return _mat + inc;
 }
 
@@ -56,14 +64,20 @@ int GeneralMatrix::size() const {
 }
 
 double GeneralMatrix::operator[](const int id) const {
+    if (size() <= id)
+        throw std::out_of_range("");
     return _mat[id];
 }
 
 double GeneralMatrix::get(const int i, const int j) const {
+    if (m() <= i || n() <= j)
+        throw std::out_of_range("");
     return _mat[_colMajToArrId(i, j)];
 }
 
 const double* GeneralMatrix::getPointer(const int inc) const {
+    if (size() <= inc)
+        throw std::out_of_range("");
     return _mat + inc;
 }
 

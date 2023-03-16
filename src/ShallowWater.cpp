@@ -19,7 +19,7 @@ ShallowWater::ShallowWater(
     if (
         _dt < 0.0 || _t < 0.0 || _t < _dt ||
         _nx < 2 || _ny < 2 ||
-        _ic < 1 || 4 < _ic
+        _ic < 0 || 4 < _ic
     ) throw std::invalid_argument("Invalid argument.");
 }
 
@@ -34,6 +34,14 @@ void ShallowWater::setInitialConditions() {
 
     // set h to the initial surface height for each test cases
     switch (_ic) {
+        case 0:
+            for (int i = 0; i < _H.m(); i++) {
+                for (int j = 0; j < _H.n(); j++) {
+                    _H.set(i, j, 1.0);
+                }
+            }
+            break;
+
         case 1:
             // plane waves propagating in x
             for (int i = 0; i < _nx; i++) {
@@ -46,6 +54,7 @@ void ShallowWater::setInitialConditions() {
                 }
             }
             break;
+
         case 2:
             // plane waves propagating in y
             for (int j = 0; j < _ny; j++) {
@@ -58,6 +67,7 @@ void ShallowWater::setInitialConditions() {
                 }
             }
             break;
+
         case 3:
             // single droplet
             for (int j = 0; j < _ny; j++) {
@@ -70,6 +80,7 @@ void ShallowWater::setInitialConditions() {
                 }
             }
             break;
+
         default:
             // double droplet
             for (int j = 0; j < _ny; j++) {
@@ -121,19 +132,18 @@ void ShallowWater::timeIntegrate() {
 
     double t = 0.0;
     while (t < _t) {
-        // perform central difference
-        _cd.performWrtX(_U, dUdx);
-        _cd.performWrtX(_V, dVdx);
-        _cd.performWrtX(_H, dHdx);
-        _cd.performWrtY(_U, dUdy);
-        _cd.performWrtY(_V, dVdy);
-        _cd.performWrtY(_H, dHdy);
-
         //--------- k1
         // copy U, V, H, to tempU, tempV, tempH
         F77NAME(dcopy)(_U.size(), _U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(dcopy)(_V.size(), _V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(dcopy)(_H.size(), _H.getPointer(0), 1, tempH.getPointer(0), 1);
+        // perform central difference
+        _cd.performWrtXLoop(tempU, dUdx);
+        _cd.performWrtXLoop(tempV, dVdx);
+        _cd.performWrtXLoop(tempH, dHdx);
+        _cd.performWrtYLoop(tempU, dUdy);
+        _cd.performWrtYLoop(tempV, dVdy);
+        _cd.performWrtYLoop(tempH, dHdy);
         // k1U
         F77NAME(dcopy)(dHdx.size(), dHdx.getPointer(0), 1, k1U.getPointer(0), 1); // k1U = dHdx
         F77NAME(dscal)(k1U.size(), -_g, k1U.getPointer(0), 1); // k1U *= -g
@@ -155,6 +165,13 @@ void ShallowWater::timeIntegrate() {
         F77NAME(dcopy)(_U.size(), _U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(dcopy)(_V.size(), _V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(dcopy)(_H.size(), _H.getPointer(0), 1, tempH.getPointer(0), 1);
+        // perform central difference
+        // _cd.performWrtXLoop(tempU, dUdx);
+        // _cd.performWrtXLoop(tempV, dVdx);
+        // _cd.performWrtXLoop(tempH, dHdx);
+        // _cd.performWrtYLoop(tempU, dUdy);
+        // _cd.performWrtYLoop(tempV, dVdy);
+        // _cd.performWrtYLoop(tempH, dHdy);
         // a_n += dt * k1 / 2
         F77NAME(daxpy)(tempU.size(), _dt*0.5, k1U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(daxpy)(tempV.size(), _dt*0.5, k1V.getPointer(0), 1, tempV.getPointer(0), 1);
@@ -180,6 +197,13 @@ void ShallowWater::timeIntegrate() {
         F77NAME(dcopy)(_U.size(), _U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(dcopy)(_V.size(), _V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(dcopy)(_H.size(), _H.getPointer(0), 1, tempH.getPointer(0), 1);
+        // perform central difference
+        // _cd.performWrtXLoop(tempU, dUdx);
+        // _cd.performWrtXLoop(tempV, dVdx);
+        // _cd.performWrtXLoop(tempH, dHdx);
+        // _cd.performWrtYLoop(tempU, dUdy);
+        // _cd.performWrtYLoop(tempV, dVdy);
+        // _cd.performWrtYLoop(tempH, dHdy);
         // a_n += dt * k2 / 2
         F77NAME(daxpy)(tempU.size(), _dt*0.5, k2U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(daxpy)(tempV.size(), _dt*0.5, k2V.getPointer(0), 1, tempV.getPointer(0), 1);
@@ -205,6 +229,13 @@ void ShallowWater::timeIntegrate() {
         F77NAME(dcopy)(_U.size(), _U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(dcopy)(_V.size(), _V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(dcopy)(_H.size(), _H.getPointer(0), 1, tempH.getPointer(0), 1);
+        // perform central difference
+        // _cd.performWrtXLoop(tempU, dUdx);
+        // _cd.performWrtXLoop(tempV, dVdx);
+        // _cd.performWrtXLoop(tempH, dHdx);
+        // _cd.performWrtYLoop(tempU, dUdy);
+        // _cd.performWrtYLoop(tempV, dVdy);
+        // _cd.performWrtYLoop(tempH, dHdy);
         // a_n += dt * k3
         F77NAME(daxpy)(tempU.size(), _dt, k3U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(daxpy)(tempV.size(), _dt, k3V.getPointer(0), 1, tempV.getPointer(0), 1);
@@ -255,13 +286,38 @@ void ShallowWater::exportData(const std::string& fname) {
     file.open(fname);
 
     for (int j = 0; j < _ny; j++) {
-        double y = j * _dy;            
+        double y = j * _dy;
         for (int i = 0; i < _nx; i++) {
             double x = i * _dx;
             file << x << " " << y << " ";
             file << _U.get(i, j) << " ";
             file << _V.get(i, j) << " ";
             file << _H.get(i, j) << std::endl;
+        }
+        file << std::endl;
+    }
+
+    file.close();
+}
+
+void ShallowWater::test() {
+    setInitialConditions();
+    std::string fname("testOutput.txt");
+    std::ofstream file;
+    file.open(fname);
+
+    GeneralMatrix dHdy(_nx, _ny);
+
+    _cd.performWrtYLoop(_H, dHdy);
+
+    for (int j = 0; j < _ny; j++) {
+        double y = j * _dy;
+        for (int i = 0; i < _nx; i++) {
+            double x = i * _dx;
+            file << x << " " << y << " ";
+            file << _U.get(i, j) << " ";
+            file << _V.get(i, j) << " ";
+            file << dHdy.get(i, j) << std::endl;
         }
         file << std::endl;
     }

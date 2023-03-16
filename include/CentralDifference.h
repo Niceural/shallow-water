@@ -8,6 +8,8 @@ class CentralDifference {
     private:
         const int _m;
         const int _n;
+        const double _dx;
+        const double _dy;
 
         SquareBandedMatrix _dx_d;
         GeneralMatrix _dx_t1;
@@ -23,8 +25,11 @@ class CentralDifference {
         CentralDifference(const int m, const int n, const double dx, const double dy);
         ~CentralDifference();
 
-        void performWrtX(const GeneralMatrix& A, GeneralMatrix& dAdx);
-        void performWrtY(const GeneralMatrix& A, GeneralMatrix& dAdy);
+        void performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& dAdx);
+        void performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& dAdy);
+
+        void performWrtXBlas(const GeneralMatrix& A, GeneralMatrix& dAdx);
+        void performWrtYBlas(const GeneralMatrix& A, GeneralMatrix& dAdy);
 };
 
 #endif // CENTRAL_DIFFERENCE_H
