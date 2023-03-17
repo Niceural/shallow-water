@@ -96,7 +96,14 @@ void ShallowWater::setInitialConditions() {
     }
 }
 
-void ShallowWater::timeIntegrate() {
+void ShallowWater::_timeIntegrateLoop() {
+    double t = 0;
+    while (t < _t) {
+        t += _dt;
+    }
+}
+
+void ShallowWater::_timeIntegrateBlas() {
     setInitialConditions();
 
     // central difference
@@ -138,12 +145,12 @@ void ShallowWater::timeIntegrate() {
         F77NAME(dcopy)(_V.size(), _V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(dcopy)(_H.size(), _H.getPointer(0), 1, tempH.getPointer(0), 1);
         // perform central difference
-        _cd.performWrtXLoop(tempU, dUdx);
-        _cd.performWrtXLoop(tempV, dVdx);
-        _cd.performWrtXLoop(tempH, dHdx);
-        _cd.performWrtYLoop(tempU, dUdy);
-        _cd.performWrtYLoop(tempV, dVdy);
-        _cd.performWrtYLoop(tempH, dHdy);
+        _cd.performWrtX(0, tempU, dUdx);
+        _cd.performWrtX(0, tempV, dVdx);
+        _cd.performWrtX(0, tempH, dHdx);
+        _cd.performWrtY(0, tempU, dUdy);
+        _cd.performWrtY(0, tempV, dVdy);
+        _cd.performWrtY(0, tempH, dHdy);
         // k1U
         F77NAME(dcopy)(dHdx.size(), dHdx.getPointer(0), 1, k1U.getPointer(0), 1); // k1U = dHdx
         F77NAME(dscal)(k1U.size(), -_g, k1U.getPointer(0), 1); // k1U *= -g
@@ -166,12 +173,12 @@ void ShallowWater::timeIntegrate() {
         F77NAME(dcopy)(_V.size(), _V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(dcopy)(_H.size(), _H.getPointer(0), 1, tempH.getPointer(0), 1);
         // perform central difference
-        _cd.performWrtXLoop(tempU, dUdx);
-        _cd.performWrtXLoop(tempV, dVdx);
-        _cd.performWrtXLoop(tempH, dHdx);
-        _cd.performWrtYLoop(tempU, dUdy);
-        _cd.performWrtYLoop(tempV, dVdy);
-        _cd.performWrtYLoop(tempH, dHdy);
+        _cd.performWrtX(0, tempU, dUdx);
+        _cd.performWrtX(0, tempV, dVdx);
+        _cd.performWrtX(0, tempH, dHdx);
+        _cd.performWrtY(0, tempU, dUdy);
+        _cd.performWrtY(0, tempV, dVdy);
+        _cd.performWrtY(0, tempH, dHdy);
         // a_n += dt * k1 / 2
         F77NAME(daxpy)(tempU.size(), _dt*0.5, k1U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(daxpy)(tempV.size(), _dt*0.5, k1V.getPointer(0), 1, tempV.getPointer(0), 1);
@@ -198,12 +205,12 @@ void ShallowWater::timeIntegrate() {
         F77NAME(dcopy)(_V.size(), _V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(dcopy)(_H.size(), _H.getPointer(0), 1, tempH.getPointer(0), 1);
         // perform central difference
-        _cd.performWrtXLoop(tempU, dUdx);
-        _cd.performWrtXLoop(tempV, dVdx);
-        _cd.performWrtXLoop(tempH, dHdx);
-        _cd.performWrtYLoop(tempU, dUdy);
-        _cd.performWrtYLoop(tempV, dVdy);
-        _cd.performWrtYLoop(tempH, dHdy);
+        _cd.performWrtX(0, tempU, dUdx);
+        _cd.performWrtX(0, tempV, dVdx);
+        _cd.performWrtX(0, tempH, dHdx);
+        _cd.performWrtY(0, tempU, dUdy);
+        _cd.performWrtY(0, tempV, dVdy);
+        _cd.performWrtY(0, tempH, dHdy);
         // a_n += dt * k2 / 2
         F77NAME(daxpy)(tempU.size(), _dt*0.5, k2U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(daxpy)(tempV.size(), _dt*0.5, k2V.getPointer(0), 1, tempV.getPointer(0), 1);
@@ -230,12 +237,12 @@ void ShallowWater::timeIntegrate() {
         F77NAME(dcopy)(_V.size(), _V.getPointer(0), 1, tempV.getPointer(0), 1);
         F77NAME(dcopy)(_H.size(), _H.getPointer(0), 1, tempH.getPointer(0), 1);
         // perform central difference
-        _cd.performWrtXLoop(tempU, dUdx);
-        _cd.performWrtXLoop(tempV, dVdx);
-        _cd.performWrtXLoop(tempH, dHdx);
-        _cd.performWrtYLoop(tempU, dUdy);
-        _cd.performWrtYLoop(tempV, dVdy);
-        _cd.performWrtYLoop(tempH, dHdy);
+        _cd.performWrtX(0, tempU, dUdx);
+        _cd.performWrtX(0, tempV, dVdx);
+        _cd.performWrtX(0, tempH, dHdx);
+        _cd.performWrtY(0, tempU, dUdy);
+        _cd.performWrtY(0, tempV, dVdy);
+        _cd.performWrtY(0, tempH, dHdy);
         // a_n += dt * k3
         F77NAME(daxpy)(tempU.size(), _dt, k3U.getPointer(0), 1, tempU.getPointer(0), 1);
         F77NAME(daxpy)(tempV.size(), _dt, k3V.getPointer(0), 1, tempV.getPointer(0), 1);
@@ -281,6 +288,10 @@ void ShallowWater::timeIntegrate() {
     }
 }
 
+void ShallowWater::timeIntegrate() {
+
+}
+
 void ShallowWater::exportData(const std::string& fname) {
     std::ofstream file;
     file.open(fname);
@@ -307,7 +318,7 @@ void ShallowWater::test() {
     file.open(fname);
 
     GeneralMatrix dH(_nx, _ny);
-    _cd.performWrtYLoop(_H, dH);
+    _cd.performWrtY(1, _H, dH);
 
     for (int j = 0; j < _ny; j++) {
         double y = j * _dy;

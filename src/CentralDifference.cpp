@@ -6,23 +6,25 @@ CentralDifference::CentralDifference(
 ):
     _m(m), _n(n),
     _dx(dx), _dy(dy),
+
     _dx_d(SquareBandedMatrix(m, 3, 3, 7)),
     _dx_t1(GeneralMatrix(3, 3)),
     _dx_t2(GeneralMatrix(3, 3)),
+
     _dy_d(SquareBandedMatrix(n, 3, 3, 7)),
     _dy_t1(GeneralMatrix(3, 3)),
     _dy_t2(GeneralMatrix(3, 3))
 {
-    _generateDx(dx);
-    _generateDy(dy);
+    _generateDx();
+    _generateDy();
 }
 
 CentralDifference::~CentralDifference() {}
 
-void CentralDifference::_generateDx(const double dx) {
-    double a = 3.0 / 4.0 / dx;
-    double b = - 3.0 / 20.0 / dx;
-    double c = 1.0 / 60.0 / dx;
+void CentralDifference::_generateDx() {
+    double a = 3.0 / 4.0 / _dx;
+    double b = - 3.0 / 20.0 / _dx;
+    double c = 1.0 / 60.0 / _dx;
 
     // banded matrix
     double val[] = {
@@ -45,10 +47,10 @@ void CentralDifference::_generateDx(const double dx) {
         _dx_t2[i] = t2[i];
 }
 
-void CentralDifference::_generateDy(const double dy) {
-    double a = 3.0 / 4.0 / dy;
-    double b = - 3.0 / 20.0 / dy;
-    double c = 1.0 / 60.0 / dy;
+void CentralDifference::_generateDy() {
+    double a = 3.0 / 4.0 / _dy;
+    double b = - 3.0 / 20.0 / _dy;
+    double c = 1.0 / 60.0 / _dy;
 
     // banded matrix
     double val[] = {
@@ -72,7 +74,7 @@ void CentralDifference::_generateDy(const double dy) {
 
 }
 
-void CentralDifference::performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& dAdx) {
+void CentralDifference::_performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& dAdx) {
     double a = 3.0 / 4.0 / _dx;
     double b = - 3.0 / 20.0 / _dx;
     double c = 1.0 / 60.0 / _dx;
@@ -117,7 +119,7 @@ void CentralDifference::performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& d
     }
 }
 
-void CentralDifference::performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& dAdy) {
+void CentralDifference::_performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& dAdy) {
     double a = 3.0 / 4.0 / _dy;
     double b = - 3.0 / 20.0 / _dy;
     double c = 1.0 / 60.0 / _dy;
@@ -163,7 +165,7 @@ void CentralDifference::performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& d
     }
 }
 
-void CentralDifference::performWrtXBlas(const GeneralMatrix& A, GeneralMatrix& dAdx) {
+void CentralDifference::_performWrtXBlas(const GeneralMatrix& A, GeneralMatrix& dAdx) {
     // banded matrix
     for (int i = 0; i < A.n(); i++) {
         F77NAME(dgbmv)(
@@ -173,7 +175,6 @@ void CentralDifference::performWrtXBlas(const GeneralMatrix& A, GeneralMatrix& d
         );
     }
 
-    /*
     // top right triangular matrix
     for (int i = 0; i < A.n(); i++) {
         F77NAME(dgemv)(
@@ -191,10 +192,9 @@ void CentralDifference::performWrtXBlas(const GeneralMatrix& A, GeneralMatrix& d
             1.0, dAdx.getPointer(dAdx.m()-3 + i*dAdx.m()), 1
         );
     }
-    */
 }
 
-void CentralDifference::performWrtYBlas(const GeneralMatrix& A, GeneralMatrix&dAdy) {
+void CentralDifference::_performWrtYBlas(const GeneralMatrix& A, GeneralMatrix&dAdy) {
     // banded matrix
     for (int i = 0; i < A.m(); i++) {
         F77NAME(dgbmv)(
@@ -204,31 +204,37 @@ void CentralDifference::performWrtYBlas(const GeneralMatrix& A, GeneralMatrix&dA
         );
     }
 
-    /*
     // top right triangular matrix
-    F77NAME(dgemm)(
-        'n', 'n', A.m(), 3, 3,
-        1.0, A.getPointer((A.n()-3) * A.m()), A.m(),
-        _dy_t1.getPointer(0), _dy_t1.m(),
-        1.0, dAdy.getPointer(0), dAdy.m()
-    );
-
     for (int i = 0; i < A.m(); i++) {
         F77NAME(dgemv)(
-            'N', _dy_t1.m(), _dy_t1.n(), 1.0, _dy_t1.getPointer(0), 3,
-            A.getPointer(A.n()-3 + i*A.n()), A.m(),
-            1.0, dAdy.getPointer(i*dAdy.n()), dAdy.m()
+            'N', _dy_t1.m(), _dy_t1.n(), 1.0, _dy_t1.getPointer(0), _dy_t1.m(),
+            A.getPointer(A.m() * (A.n()-3) + i), A.m(),
+            1.0, dAdy.getPointer(i), dAdy.m()
         );
     }
 
     // bottom left triangular matrix
     for (int i = 0; i < A.m(); i++) {
         F77NAME(dgemv)(
-            'N', _dx_t2.m(), _dx_t2.n(), 1.0, _dx_t2.getPointer(0), 3,
-            A.getPointer(i*A.n()), A.m(),
-            1.0, dAdy.getPointer(dAdy.n()-3 + i*dAdy.n()), dAdy.m()
+            'N', _dy_t2.m(), _dy_t2.n(), 1.0, _dy_t2.getPointer(0), _dy_t1.m(),
+            A.getPointer(i), A.m(),
+            1.0, dAdy.getPointer(A.m() * (A.n()-3) + i), dAdy.m()
         );
     }
-    */
 }
 
+void CentralDifference::performWrtX(const bool loopBlas, const GeneralMatrix& A, GeneralMatrix& dAdx) {
+    if (loopBlas) {
+        _performWrtXBlas(A, dAdx);
+    } else {
+        _performWrtXLoop(A, dAdx);
+    }
+}
+
+void CentralDifference::performWrtY(const bool loopBlas, const GeneralMatrix& A, GeneralMatrix& dAdy) {
+    if (loopBlas) {
+        _performWrtYBlas(A, dAdy);
+    } else {
+        _performWrtYLoop(A, dAdy);
+    }
+}

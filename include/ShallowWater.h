@@ -30,6 +30,9 @@ class ShallowWater {
 
         CentralDifference _cd;
     
+        void _timeIntegrateLoop();
+        void _timeIntegrateBlas();
+
     public:
         ShallowWater(const double dt, const double t, const int nx, const int ny, const int nc);
         ~ShallowWater();

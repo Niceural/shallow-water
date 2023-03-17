@@ -14,22 +14,25 @@ class CentralDifference {
         SquareBandedMatrix _dx_d;
         GeneralMatrix _dx_t1;
         GeneralMatrix _dx_t2;
-        void _generateDx(const double dx);
+        void _generateDx();
 
         SquareBandedMatrix _dy_d;
         GeneralMatrix _dy_t1;
         GeneralMatrix _dy_t2;
-        void _generateDy(const double dy);
+        void _generateDy();
     
+        void _performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& dAdx);
+        void _performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& dAdy);
+
+        void _performWrtXBlas(const GeneralMatrix& A, GeneralMatrix& dAdx);
+        void _performWrtYBlas(const GeneralMatrix& A, GeneralMatrix& dAdy);
+
     public:
         CentralDifference(const int m, const int n, const double dx, const double dy);
         ~CentralDifference();
 
-        void performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& dAdx);
-        void performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& dAdy);
-
-        void performWrtXBlas(const GeneralMatrix& A, GeneralMatrix& dAdx);
-        void performWrtYBlas(const GeneralMatrix& A, GeneralMatrix& dAdy);
+        void performWrtX(const bool loopBlas, const GeneralMatrix& A, GeneralMatrix& dAdx);
+        void performWrtY(const bool loopBlas, const GeneralMatrix& A, GeneralMatrix& dAdy);
 };
 
 #endif // CENTRAL_DIFFERENCE_H
