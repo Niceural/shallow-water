@@ -29,9 +29,9 @@ int main(int argc, char** argv) {
 
     ShallowWater sw(dt, t, nx, ny, ic);
     sw.setInitialConditions();
-    sw.timeIntegrate();
-    // sw.test();
-    sw.exportData("output.txt");
+    // sw.timeIntegrate();
+    sw.test();
+    // sw.exportData("output.txt");
 
     return 0;
 }

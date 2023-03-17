@@ -95,8 +95,8 @@ void CentralDifference::performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& d
         dAdx.set(2, j, num);
 
         for (int i = 3; i < A.m()-3; i++) {
-            num = - c*A.get(i-3,j) - b*A.get(i-2,j) - a*A.get(i-1,j) +
-                a*A.get(i+1,j) + b*A.get(i+2,j) + c*A.get(i+3,j);
+            num = -c*A.get(i-3,j) -b*A.get(i-2,j) -a*A.get(i-1,j)
+                +a*A.get(i+1,j) +b*A.get(i+2,j) +c*A.get(i+3,j);
             dAdx.set(i, j, num);
         }
 
@@ -141,8 +141,8 @@ void CentralDifference::performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& d
 
         // j not depending on bc
         for (int j = 3; j < A.n()-3; j++) {
-            num = - c*A.get(i,j-3) - b*A.get(i,j-2) - a*A.get(i,j-1) +
-                a*A.get(i,j+1) + b*A.get(i,j+2) + c*A.get(i,j+3);
+            num = -c*A.get(i,j-3) -b*A.get(i,j-2) -a*A.get(i,j-1)
+                +a*A.get(i,j+1) +b*A.get(i,j+2) +c*A.get(i,j+3);
             dAdy.set(i, j, num);
         }
 
