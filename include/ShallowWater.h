@@ -19,6 +19,7 @@ class ShallowWater {
         const int _ny; /// Number of grid points in y.
         const int _n; /// Total number of grid points.
         const int _ic; /// Index of the initial condition to use (1-4).
+        const bool _loopBlas;
         const double _dx; /// Constant point spacing along x.
         const double _dy; /// Constant point spacing along y.
         const double _g; /// Acceleration due to gravity.
@@ -34,7 +35,7 @@ class ShallowWater {
         void _timeIntegrateBlas();
 
     public:
-        ShallowWater(const double dt, const double t, const int nx, const int ny, const int nc);
+        ShallowWater(const double dt, const double t, const int nx, const int ny, const int nc, const bool loopBlas);
         ~ShallowWater();
 
         void setInitialConditions();

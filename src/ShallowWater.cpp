@@ -3,12 +3,12 @@
 ShallowWater::ShallowWater(
     const double dt, const double t,
     const int nx, const int ny,
-    const int ic
+    const int ic, const bool loopBlas
 ):
     // parameters
     _dt(dt), _t(t),
     _nx(nx), _ny(ny), _n(nx * ny),
-    _ic(ic),
+    _ic(ic), _loopBlas(loopBlas),
     _dx(1.0), _dy(1.0),
     _g(9.81),
 
@@ -97,8 +97,125 @@ void ShallowWater::setInitialConditions() {
 }
 
 void ShallowWater::_timeIntegrateLoop() {
+    // central difference
+    GeneralMatrix dUdx(_nx, _ny);
+    GeneralMatrix dUdy(_nx, _ny);
+    GeneralMatrix dVdx(_nx, _ny);
+    GeneralMatrix dVdy(_nx, _ny);
+    GeneralMatrix dHdx(_nx, _ny);
+    GeneralMatrix dHdy(_nx, _ny);
+
+    // runge kutta U
+    GeneralMatrix k1U(_nx, _ny);
+    GeneralMatrix k2U(_nx, _ny);
+    GeneralMatrix k3U(_nx, _ny);
+    GeneralMatrix k4U(_nx, _ny);
+
+    // runge kutta V
+    GeneralMatrix k1V(_nx, _ny);
+    GeneralMatrix k2V(_nx, _ny);
+    GeneralMatrix k3V(_nx, _ny);
+    GeneralMatrix k4V(_nx, _ny);
+
+    // runge kutta H
+    GeneralMatrix k1H(_nx, _ny);
+    GeneralMatrix k2H(_nx, _ny);
+    GeneralMatrix k3H(_nx, _ny);
+    GeneralMatrix k4H(_nx, _ny);
+
+    // temporary variables
+    GeneralMatrix tU(_nx, _ny);
+    GeneralMatrix tV(_nx, _ny);
+    GeneralMatrix tH(_nx, _ny);
+
+    const int n = _U.size();
     double t = 0;
     while (t < _t) {
+        //--------- k1
+        // central difference
+        _cd.performWrtX(_loopBlas, _U, dUdx);
+        _cd.performWrtY(_loopBlas, _U, dUdy);
+        _cd.performWrtX(_loopBlas, _V, dVdx);
+        _cd.performWrtY(_loopBlas, _V, dVdy);
+        _cd.performWrtX(_loopBlas, _H, dHdx);
+        _cd.performWrtY(_loopBlas, _H, dHdy);
+        // k1
+        for (int i = 0; i < n; i++) {
+            k1U[i] = - (_U[i]*dUdx[i] + _V[i]*dUdy[i] + _g*dHdx[i]);
+            k1V[i] = - (_U[i]*dVdx[i] + _V[i]*dVdy[i] + _g*dHdy[i]);
+            k1H[i] = - (_U[i]*dHdx[i] + _H[i]*dUdx[i] + _V[i]*dHdy[i] + _H[i]*dVdy[i]);
+        }
+
+        //--------- k2
+        // update U, V, and H
+        for (int i = 0; i < n; i++) {
+            tU[i] = _U[i] + 0.5*_dt*k1U[i];
+            tV[i] = _V[i] + 0.5*_dt*k1V[i];
+            tH[i] = _H[i] + 0.5*_dt*k1H[i];
+        }
+        // central difference
+        _cd.performWrtX(_loopBlas, tU, dUdx);
+        _cd.performWrtY(_loopBlas, tU, dUdy);
+        _cd.performWrtX(_loopBlas, tV, dVdx);
+        _cd.performWrtY(_loopBlas, tV, dVdy);
+        _cd.performWrtX(_loopBlas, tH, dHdx);
+        _cd.performWrtY(_loopBlas, tH, dHdy);
+        // k2
+        for (int i = 0; i < n; i++) {
+            k2U[i] = - (tU[i]*dUdx[i] + tV[i]*dUdy[i] + _g*dHdx[i]);
+            k2V[i] = - (tU[i]*dVdx[i] + tV[i]*dVdy[i] + _g*dHdy[i]);
+            k2H[i] = - (tU[i]*dHdx[i] + tH[i]*dUdx[i] + tV[i]*dHdy[i] + tH[i]*dVdy[i]);
+        }
+
+        //--------- k3
+        // update U, V, and H
+        for (int i = 0; i < n; i++) {
+            tU[i] = _U[i] + 0.5*_dt*k2U[i];
+            tV[i] = _V[i] + 0.5*_dt*k2V[i];
+            tH[i] = _H[i] + 0.5*_dt*k2H[i];
+        }
+        // central difference
+        _cd.performWrtX(_loopBlas, tU, dUdx);
+        _cd.performWrtY(_loopBlas, tU, dUdy);
+        _cd.performWrtX(_loopBlas, tV, dVdx);
+        _cd.performWrtY(_loopBlas, tV, dVdy);
+        _cd.performWrtX(_loopBlas, tH, dHdx);
+        _cd.performWrtY(_loopBlas, tH, dHdy);
+        // k3
+        for (int i = 0; i < n; i++) {
+            k3U[i] = - (tU[i]*dUdx[i] + tV[i]*dUdy[i] + _g*dHdx[i]);
+            k3V[i] = - (tU[i]*dVdx[i] + tV[i]*dVdy[i] + _g*dHdy[i]);
+            k3H[i] = - (tU[i]*dHdx[i] + tH[i]*dUdx[i] + tV[i]*dHdy[i] + tH[i]*dVdy[i]);
+        }
+
+        //--------- k4
+        // update U, V, and H
+        for (int i = 0; i < n; i++) {
+            tU[i] = _U[i] + _dt*k3U[i];
+            tV[i] = _V[i] + _dt*k3V[i];
+            tH[i] = _H[i] + _dt*k3H[i];
+        }
+        // central difference
+        _cd.performWrtX(_loopBlas, tU, dUdx);
+        _cd.performWrtY(_loopBlas, tU, dUdy);
+        _cd.performWrtX(_loopBlas, tV, dVdx);
+        _cd.performWrtY(_loopBlas, tV, dVdy);
+        _cd.performWrtX(_loopBlas, tH, dHdx);
+        _cd.performWrtY(_loopBlas, tH, dHdy);
+        // k4
+        for (int i = 0; i < n; i++) {
+            k4U[i] = - (tU[i]*dUdx[i] + tV[i]*dUdy[i] + _g*dHdx[i]);
+            k4V[i] = - (tU[i]*dVdx[i] + tV[i]*dVdy[i] + _g*dHdy[i]);
+            k4H[i] = - (tU[i]*dHdx[i] + tH[i]*dUdx[i] + tV[i]*dHdy[i] + tH[i]*dVdy[i]);
+        }
+
+        // update U, V, and H
+        for (int i = 0; i < n; i++) {
+            _U[i] += (k1U[i] + 2.0*k2U[i] + 2.0*k3U[i] + k4U[i]) *_dt / 6.0;
+            _V[i] += (k1V[i] + 2.0*k2V[i] + 2.0*k3V[i] + k4V[i]) *_dt / 6.0;
+            _H[i] += (k1H[i] + 2.0*k2H[i] + 2.0*k3H[i] + k4H[i]) *_dt / 6.0;
+        }
+
         t += _dt;
     }
 }
@@ -289,7 +406,7 @@ void ShallowWater::_timeIntegrateBlas() {
 }
 
 void ShallowWater::timeIntegrate() {
-
+    _timeIntegrateLoop();
 }
 
 void ShallowWater::exportData(const std::string& fname) {

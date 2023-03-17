@@ -58,7 +58,7 @@ test1: release
 	./build/apps/shallowWater --dt 0.01 --T 10.0 --Nx 100 --Ny 100 --ic 1
 
 test3: release
-	./build/apps/shallowWater --dt 0.01 --T 4.0 --Nx 100 --Ny 100 --ic 3
+	./build/apps/shallowWater --dt 0.1 --T 3.0 --Nx 100 --Ny 100 --ic 4
 
 # CC = g++
 # CFLAGS = -Wall -Wshadow

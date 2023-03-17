@@ -7,7 +7,7 @@ namespace po = boost::program_options;
 int main(int argc, char** argv) {
     double dt = 0.1; double t = 100.0;
     int nx = 100; int ny = 100;
-    int ic = 1;
+    int ic = 1; bool loopBlas = 0;
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -27,11 +27,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    ShallowWater sw(dt, t, nx, ny, ic);
+    ShallowWater sw(dt, t, nx, ny, ic, loopBlas);
     sw.setInitialConditions();
-    // sw.timeIntegrate();
-    sw.test();
-    // sw.exportData("output.txt");
+    sw.timeIntegrate();
+    // sw.test();
+    sw.exportData("output.txt");
 
     return 0;
 }
