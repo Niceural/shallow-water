@@ -7,8 +7,40 @@ FiniteDifference::FiniteDifference(
     const double dx, const double dy
 ): 
     _m(m), _n(n),
-    _dx(dx), _dy(dy)
-{}
+    _dx(dx), _dy(dy),
+    _cd_d(SquareBandedMatrix(m < n ? n : m, 3, 3, 7)),
+    _cd_t1(GeneralMatrix(3, 3)),
+    _cd_t2(GeneralMatrix(3, 3))
+{
+    double a = 3.0 / 4.0 / _dx;
+    double b = - 3.0 / 20.0 / _dx;
+    double c = 1.0 / 60.0 / _dx;
+
+    // arrays to initialize the central difference matrices
+    // banded matrix
+    double val[] = {
+        c, b, a,
+        0.0,
+        -a, -b, -c
+    };
+    // top right triangular matrix
+    double t1[] = { -c, 0., 0. , -b, -c, 0., -a, -b, -c };
+    // bottom left triangular matrix
+    double t2[] = { c, b, a, 0., c, b, 0., 0., c };
+
+    // banded matrix
+    for (int j = 0; j < _cd_d.n(); j++)
+        for (int i = 0; i < _cd_d.ld(); i++)
+            _cd_d.set(i, j, val[i]);
+
+    // top right triangular matrix
+    for (int i = 0; i < _cd_t1.size(); i++)
+        _cd_t1[i] = t1[i];
+
+    // bottom left triangular matrix
+    for (int i = 0; i < _cd_t2.size(); i++)
+        _cd_t2[i] = t2[i];
+}
 
 FiniteDifference::~FiniteDifference() {
 }
@@ -129,6 +161,13 @@ void FiniteDifference::_centralDifferenceLoopY(MultiQuantityMatrix& grid) {
 //------------------------------------- central difference blas
 
 void FiniteDifference::_centralDifferenceBlasX(MultiQuantityMatrix& grid) {
+    // banded matrix
+    for (int i = 0; i < grid.n(); i++) {
+        F77NAME(dgbmv)(
+            'N', _cd_d.n(), _cd_d.n(), _cd_d.kl(), _cd_d.ku(), 1.0, _cd_d.getPointer(0), _cd_d.ld(),
+            // to be continued...
+        );
+    }
 }
 
 void FiniteDifference::_centralDifferenceBlasY(MultiQuantityMatrix& grid) {

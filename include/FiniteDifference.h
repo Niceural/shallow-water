@@ -2,6 +2,8 @@
 #define FINITE_DIFFERENCE_H
 
 #include "MultiQuantityMatrix.h"
+#include "./matrices/GeneralMatrix.h"
+#include "./matrices/SquareBandedMatrix.h"
 
 class FiniteDifference {
     private:
@@ -10,9 +12,12 @@ class FiniteDifference {
         const double _dx;
         const double _dy;
 
-
         void _centralDifferenceLoopX(MultiQuantityMatrix& grid);
         void _centralDifferenceLoopY(MultiQuantityMatrix& grid);
+
+        SquareBandedMatrix _cd_d;
+        GeneralMatrix _cd_t1;
+        GeneralMatrix _cd_t2;
         void _centralDifferenceBlasX(MultiQuantityMatrix& grid);
         void _centralDifferenceBlasY(MultiQuantityMatrix& grid);
 
