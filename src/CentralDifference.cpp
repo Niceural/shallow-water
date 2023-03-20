@@ -120,7 +120,7 @@ void CentralDifference::_performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& 
     double b = - 3.0 / 20.0 / _dx;
     double c = 1.0 / 60.0 / _dx;
 
-    #pragma omp parallel for num_threads(10)
+    #pragma omp parallel for // num_threads(10)
     for (int j = 0; j < A.n(); j++) {
         // i = 0
         dAdx.set(0, j, -c*A.get(A.m()-3,j) -b*A.get(A.m()-2,j) -a*A.get(A.m()-1,j)
@@ -158,7 +158,7 @@ void CentralDifference::_performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& 
     double b = - 3.0 / 20.0 / _dy;
     double c = 1.0 / 60.0 / _dy;
 
-    #pragma omp parallel for num_threads(10)
+    #pragma omp parallel for // num_threads(10)
     for (int i = 0; i < A.m(); i++) {
         // j = 0
         dAdy.set(i, 0, -c*A.get(i,A.n()-3) -b*A.get(i,A.n()-2) -a*A.get(i,A.n()-1)
