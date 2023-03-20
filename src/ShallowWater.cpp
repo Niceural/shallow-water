@@ -1,109 +1,83 @@
 #include "../include/ShallowWater.h"
 
 ShallowWater::ShallowWater(
-    const double dt, const double t,
     const int nx, const int ny,
-    const int ic, const bool loopBlas
+    const double dx, const double dy
 ):
-    // parameters
-    _dt(dt), _t(t),
-    _nx(nx), _ny(ny), _n(nx * ny),
-    _ic(ic), _loopBlas(loopBlas),
-    _dx(1.0), _dy(1.0),
-    _g(9.81),
-
-    // grid
-    _U(GeneralMatrix(nx, ny)), _V(GeneralMatrix(nx, ny)), _H(GeneralMatrix(nx, ny)),
-    _cd(CentralDifference(_nx, _ny, _dx, _dy))
+    _domain(Domain(nx, ny, dx, dy))
 {
     if (
-        _dt < 0.0 || _t < 0.0 || _t < _dt ||
-        _nx < 2 || _ny < 2 ||
-        _ic < 0 || 4 < _ic
+        nx < 6 || ny < 6 ||
+        dx < 0.0 || dy < 0.0
     ) throw std::invalid_argument("Invalid argument.");
 }
 
-ShallowWater::~ShallowWater() {}
+void ShallowWater::setInitialConditions(const int ic, const double meanH) {
+    // set U and V to nil
+    for (int i = 0; i < _domain.get_nx(); i++) {
+        for (int j = 0; j < _domain.get_ny(); j++) {
+            _domain.set_U(i, j, 0.0);
+            _domain.set_V(i, j, 0.0);
+        }
+    }
 
-void ShallowWater::setInitialConditions() {
-    #pragma omp parallel default(shared)
-    {
-    #pragma omp sections
-    {
-
-    // set u to zero
-    #pragma omp section
-    F77NAME(dscal)(_n, 0.0, _U.getPointer(0), 1);
-
-    // set v to zero
-    #pragma omp section
-    F77NAME(dscal)(_n, 0.0, _V.getPointer(0), 1);
-
-    // set h to the initial surface height for each test cases
-    #pragma omp section
-    switch (_ic) {
-        case 0:
-            for (int i = 0; i < _H.m(); i++) {
-                for (int j = 0; j < _H.n(); j++) {
-                    _H.set(i, j, 2.0*j);
-                }
-            }
-            break;
-
+    // set H to the initial surface height for each test case
+    switch (ic) {
         case 1:
             // plane waves propagating in x
-            for (int i = 0; i < _nx; i++) {
-                double x = i * _dx;
+            for (int i = 0; i < _domain.get_nx(); i++) {
+                double x = i * _domain.get_dx();
                 x -= 50.0;
                 x *= x;
-                double h = 10.0 + std::exp(-x / 25.0);
-                for (int j = 0; j < _ny; j++) {
-                    _H.set(i, j, h);
+                double h = meanH + std::exp(-x / 25.0);
+                for (int j = 0; j < _domain.get_ny(); j++) {
+                    _domain.set_H(i, j, h);
                 }
             }
             break;
 
         case 2:
             // plane waves propagating in y
-            for (int j = 0; j < _ny; j++) {
-                double y = j * _dy;
+            for (int j = 0; j < _domain.get_ny(); j++) {
+                double y = j * _domain.get_dy();
                 y -= 50.0;
                 y *= y;
-                double h = 10.0 + std::exp(-y / 25.0);
-                for (int i = 0; i < _nx; i++) {
-                    _H.set(i, j, h);
+                double h = meanH + std::exp(-y / 25.0);
+                for (int i = 0; i < _domain.get_ny(); i++) {
+                    _domain.set_H(i, j, h);
                 }
             }
             break;
 
         case 3:
             // single droplet
-            for (int j = 0; j < _ny; j++) {
-                for (int i = 0; i < _nx; i++) {
-                    double x = _dx * i; double y = _dy * j;
+            for (int j = 0; j < _domain.get_ny(); j++) {
+                for (int i = 0; i < _domain.get_nx(); i++) {
+                    double x = _domain.get_dx() * i; double y = _domain.get_dy() * j;
                     x -= 50.0; y -= 50.0;
                     x *= x; y *= y;
-                    double h = 10.0 + std::exp(-(x + y) / 25.0);
-                    _H.set(i, j, h);
+                    double h = meanH + std::exp(-(x + y) / 25.0);
+                    _domain.set_H(i, j, h);
+                }
+            }
+            break;
+
+        case 4:
+            // double droplet
+            for (int j = 0; j < _domain.get_ny(); j++) {
+                for (int i = 0; i < _domain.get_nx(); i++) {
+                    double x = _domain.get_dx() * i; double y = _domain.get_dy() * j;
+                    double h = meanH + 
+                        std::exp(-((x-25.0)*(x-25.0) + (y-25.0)*(y-25.0)) / 25.0) +
+                        std::exp(-((x-75.0)*(x-75.0) + (y-75.0)*(y-75.0)) / 25.0);
+                    _domain.set_H(i, j, h);
                 }
             }
             break;
 
         default:
-            // double droplet
-            for (int j = 0; j < _ny; j++) {
-                for (int i = 0; i < _nx; i++) {
-                    double x = _dx * i; double y = _dy * j;
-                    double h = 10.0 + 
-                        std::exp(-((x-25.0)*(x-25.0) + (y-25.0)*(y-25.0)) / 25.0) +
-                        std::exp(-((x-75.0)*(x-75.0) + (y-75.0)*(y-75.0)) / 25.0);
-                    _H.set(i, j, h);
-                }
-            }
+            throw std::invalid_argument("Invalid initial condition");
             break;
-    }
-
-    }
     }
 }
 
