@@ -3,6 +3,7 @@
 
 #include "./matrices/GeneralMatrix.h"
 #include "./matrices/SquareBandedMatrix.h"
+#include <omp.h>
 
 class CentralDifference {
     private:

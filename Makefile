@@ -1,7 +1,8 @@
-# inspired from https://www.partow.net/programming/makefile/index.html
+# https://www.partow.net/programming/makefile/index.html
+
 CXX      := g++ # -c++
-CXXFLAGS := -std=c++11 -pedantic-errors -Wall -Wextra -Werror -Wshadow
-LDFLAGS  := -L/usr/lib -lstdc++ -lm -lblas -lboost_program_options
+CXXFLAGS := -std=c++11 -pedantic-errors -Wall -Wextra -Werror -Wshadow -fopenmp
+LDFLAGS  := -L/usr/lib -lstdc++ -lm -lblas -lboost_program_options -lboost_timer -fopenmp
 BUILD    := ./build
 OBJ_DIR  := $(BUILD)/objects
 APP_DIR  := $(BUILD)/apps
@@ -28,7 +29,7 @@ $(APP_DIR)/$(TARGET): $(OBJECTS)
 
 -include $(DEPENDENCIES)
 
-.PHONY: all build clean debug release info
+.PHONY: all build clean debug release info test test1 test2 test3 test4
 
 build:
 	@mkdir -p $(APP_DIR)
@@ -52,42 +53,16 @@ info:
 	@echo "[*] Dependencies:    ${DEPENDENCIES}"
 
 test: release
-	./build/apps/shallowWater --dt 0.1 --T 3.0 --Nx 100 --Ny 100 --ic 0
+	./build/apps/shallowWater --dt 0.1 --T 80.0 --Nx 100 --Ny 100 --ic 3
 
 test1: release
-	./build/apps/shallowWater --dt 0.01 --T 10.0 --Nx 100 --Ny 100 --ic 1
+	./build/apps/shallowWater --dt 0.1 --T 80.0 --Nx 100 --Ny 100 --ic 1
+
+test2: release
+	./build/apps/shallowWater --dt 0.1 --T 80.0 --Nx 100 --Ny 100 --ic 2
 
 test3: release
-	./build/apps/shallowWater --dt 0.1 --T 3.0 --Nx 100 --Ny 100 --ic 4
+	./build/apps/shallowWater --dt 0.1 --T 80.0 --Nx 100 --Ny 100 --ic 3
 
-# CC = g++
-# CFLAGS = -Wall -Wshadow
-# LIBS = -lblas -lboost_unit_test_framework
-
-# test1:
-# 	${CC} ${CFLAGS} -o target/test1 src/main.cpp -lboost_program_options
-
-# GeneralMatrix.o:
-# 	${CC} ${CFLAGS} -o target/GeneralMatrix.o -c src/matrices/GeneralMatrix.cpp
-
-# SquareBandedMatrix.o:
-# 	${CC} ${CFLAGS} -o target/SquareBandedMatrix.o -c src/matrices/SquareBandedMatrix.cpp
-
-# matrices: GeneralMatrix.o SquareBandedMatrix.o
-
-# ShallowWater.o:
-# 	${CC} ${CFLAGS} -o target/ShallowWater.o -c src/ShallowWater.cpp
-
-# build: matrices ShallowWater.o
-
-# initialCondition: matrices ShallowWater.o
-# 	${CC} ${CFLAGS} -o target/initialCondition.o -c tests/initialCondition.cpp
-# 	${CC} ${CFLAGS} -o target/initialCondition target/GeneralMatrix.o target/SquareBandedMatrix.o target/ShallowWater.o target/initialCondition.o ${LIBS}
-# 	./target/initialCondition
-
-# centralDifference: matrices ShallowWater.o
-# 	${CC} ${CFLAGS} -o target/centralDifference.o -c tests/centralDifference.cpp
-# 	${CC} ${CFLAGS} -o target/centralDifference target/GeneralMatrix.o target/SquareBandedMatrix.o target/ShallowWater.o target/centralDifference.o ${LIBS}
-# 	./target/centralDifference
-
-# test: initialCondition centralDifference
+test4: release
+	./build/apps/shallowWater --dt 0.1 --T 80.0 --Nx 100 --Ny 100 --ic 4

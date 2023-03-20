@@ -26,13 +26,21 @@ ShallowWater::ShallowWater(
 ShallowWater::~ShallowWater() {}
 
 void ShallowWater::setInitialConditions() {
+    #pragma omp parallel default(shared)
+    {
+    #pragma omp sections
+    {
+
     // set u to zero
+    #pragma omp section
     F77NAME(dscal)(_n, 0.0, _U.getPointer(0), 1);
 
     // set v to zero
+    #pragma omp section
     F77NAME(dscal)(_n, 0.0, _V.getPointer(0), 1);
 
     // set h to the initial surface height for each test cases
+    #pragma omp section
     switch (_ic) {
         case 0:
             for (int i = 0; i < _H.m(); i++) {
@@ -93,6 +101,9 @@ void ShallowWater::setInitialConditions() {
                 }
             }
             break;
+    }
+
+    }
     }
 }
 
