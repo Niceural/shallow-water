@@ -5,28 +5,29 @@
 #include "blasRoutines.h"
 #include "matrices/GeneralMatrix.h"
 #include "matrices/SquareBandedMatrix.h"
-#include "CentralDifference.h"
+#include "FiniteDifference.h"
 #include <cmath>
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "Domain.h"
+#include "MultiQuantityMatrix.h"
 
 class ShallowWater {
     private:
-        Domain _domain;
+        const double _dx;
+        const double _dy;
+
+        MultiQuantityMatrix _grid;
+        FiniteDifference _fd;
 
     public:
         ShallowWater(const int nx, const int ny, const double dx, const double dy);
 
         void setInitialConditions(const int ic, const double meanH);
-        void timeIntegrate();
+        void timeIntegrate(const bool loopBlas, const double dt, const double t);
 
-        void exportData(const std::string& fname);
-
-        // getters
+        void exportGrid(const std::string& fname);
         void test();
-        GeneralMatrix getH() const;
 };
 
 #endif // SHALLOW_WATER_H
