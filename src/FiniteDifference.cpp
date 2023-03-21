@@ -48,13 +48,13 @@ FiniteDifference::~FiniteDifference() {
 //------------------------------------- central difference
 
 void FiniteDifference::centralDifference(const bool loopBlas, MultiQuantityMatrix& grid) {
-    if (loopBlas) {
-        _centralDifferenceBlasX(grid);
-        _centralDifferenceBlasY(grid);
-    } else {
+    // if (loopBlas) {
+    //     _centralDifferenceBlasX(grid);
+    //     _centralDifferenceBlasY(grid);
+    // } else {
         _centralDifferenceLoopX(grid);
         _centralDifferenceLoopY(grid);
-    }
+    // }
 }
 
 //------------------------------------- central difference loop
@@ -85,7 +85,7 @@ void FiniteDifference::_centralDifferenceLoopX(MultiQuantityMatrix& grid) {
         }
 
         for (int i = 3; i < m-3; i++) {
-            for (int q = 0; q < 3; q++) {
+            for (int q = 0; q < 9; q+=3) {
                 grid.set(i, j, q+1,
                     -c*grid.get(i-3,j,q) -b*grid.get(i-2,j,q) -a*grid.get(i-1,j,q)
                     +a*grid.get(i+1,j,q) +b*grid.get(i+2,j,q) +c*grid.get(i+3,j,q));

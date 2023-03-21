@@ -96,7 +96,7 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
         //--------- k1
         // finite difference
         _fd.centralDifference(loopBlas, _grid);
-        std::cout << _grid.get(40, 60, 7) << std::endl;
+        // std::cout << _grid.get(40, 60, 7) << std::endl;
         // k1
         for (int id = 0; id < numPoints; id++) {
             k1.set(id, 0, -_grid.get(id,0)*_grid.get(id,1) -_grid.get(id,3)*_grid.get(id,2) -CONST_G*_grid.get(id,7));
@@ -166,6 +166,7 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
 void ShallowWater::exportGrid(const std::string& fname) {
     std::ofstream file;
     file.open(fname);
+    // _fd.centralDifference(0, _grid);
 
     for (int j = 0; j < _grid.n(); j++) {
         double y = j * _dy;
@@ -189,7 +190,7 @@ void ShallowWater::test() {
 
     for (int i = 0; i < _grid.m(); i++) {
         for(int j = 0; j < _grid.n(); j++) {
-            _grid.set(i, j, 6, j*2.0);
+            _grid.set(i, j, 6, i*2.0);
         }
     }
 
