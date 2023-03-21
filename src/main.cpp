@@ -7,9 +7,9 @@ namespace po = boost::program_options;
 
 int main(int argc, char** argv) {
     boost::timer::auto_cpu_timer timer("%t sec CPU, %w sec real\n");
-    double dt = 0.1; double t = 100.0;
+    double dt = 0.1; double t = 80.0;
     int nx = 100; int ny = 100;
-    int ic = 1; bool loopBlas = 0;
+    int ic = 3; bool loopBlas = 0;
 
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
         ("T", po::value<double>(&t)->default_value(100.0), "Total integration time.")
         ("Nx", po::value<int>(&nx)->default_value(100), "Number of grid points in x.")
         ("Ny", po::value<int>(&ny)->default_value(100), "Number of grid points in y.")
-        ("ic", po::value<int>(&ic)->default_value(1), "Index of the initial condition to use (1-4).");
+        ("ic", po::value<int>(&ic)->default_value(3), "Index of the initial condition to use (1-4).");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
