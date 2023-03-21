@@ -1,7 +1,7 @@
 # https://www.partow.net/programming/makefile/index.html
 
 CXX      := g++ # -c++
-CXXFLAGS := -std=c++11 -pedantic-errors -Wall -Wextra -Werror -Wshadow -fopenmp
+CXXFLAGS := -std=c++11 -pedantic-errors -Wall -Wextra -Wshadow -fopenmp # -Werror
 LDFLAGS  := -L/usr/lib -lstdc++ -lm -lblas -lboost_program_options -lboost_timer -fopenmp
 BUILD    := ./build
 OBJ_DIR  := $(BUILD)/objects
