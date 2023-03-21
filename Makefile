@@ -41,6 +41,9 @@ debug: all
 release: CXXFLAGS += -O2
 release: all
 
+analyzer: CXXFLAGS += -O2 -DDEBUG -g
+analyzer: all
+
 clean:
 	-@rm -rvf $(OBJ_DIR)/*
 	-@rm -rvf $(APP_DIR)/*

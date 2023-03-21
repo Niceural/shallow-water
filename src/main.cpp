@@ -15,10 +15,10 @@ int main(int argc, char** argv) {
     desc.add_options()
         ("help", "produce help message")
         ("dt", po::value<double>(&dt)->default_value(0.1), "Time-step to use.")
-        ("T", po::value<double>(&t)->default_value(100.0), "Total integration time.")
+        ("T", po::value<double>(&t)->default_value(80.0), "Total integration time.")
         ("Nx", po::value<int>(&nx)->default_value(100), "Number of grid points in x.")
         ("Ny", po::value<int>(&ny)->default_value(100), "Number of grid points in y.")
-        ("ic", po::value<int>(&ic)->default_value(1), "Index of the initial condition to use (1-4).");
+        ("ic", po::value<int>(&ic)->default_value(3), "Index of the initial condition to use (1-4).");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
