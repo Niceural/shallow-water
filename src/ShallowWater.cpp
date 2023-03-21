@@ -96,6 +96,7 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
         //--------- k1
         // finite difference
         _fd.centralDifference(loopBlas, _grid);
+        std::cout << _grid.get(40, 60, 7) << std::endl;
         // k1
         for (int id = 0; id < numPoints; id++) {
             k1.set(id, 0, -_grid.get(id,0)*_grid.get(id,1) -_grid.get(id,3)*_grid.get(id,2) -CONST_G*_grid.get(id,7));

@@ -162,12 +162,12 @@ void FiniteDifference::_centralDifferenceLoopY(MultiQuantityMatrix& grid) {
 
 void FiniteDifference::_centralDifferenceBlasX(MultiQuantityMatrix& grid) {
     // banded matrix
-    for (int i = 0; i < grid.n(); i++) {
-        F77NAME(dgbmv)(
-            'N', _cd_d.n(), _cd_d.n(), _cd_d.kl(), _cd_d.ku(), 1.0, _cd_d.getPointer(0), _cd_d.ld(),
-            // to be continued...
-        );
-    }
+    // for (int i = 0; i < grid.n(); i++) {
+    //     F77NAME(dgbmv)(
+    //         'N', _cd_d.n(), _cd_d.n(), _cd_d.kl(), _cd_d.ku(), 1.0, _cd_d.getPointer(0), _cd_d.ld(),
+    //         grid.getPointer(i*A.m()*)
+    //     );
+    // }
 }
 
 void FiniteDifference::_centralDifferenceBlasY(MultiQuantityMatrix& grid) {
