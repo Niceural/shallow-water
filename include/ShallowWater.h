@@ -1,51 +1,33 @@
 #ifndef SHALLOW_WATER_H
 #define SHALLOW_WATER_H
+#define CONST_G 9.81
 
 #include "blasRoutines.h"
 #include "matrices/GeneralMatrix.h"
 #include "matrices/SquareBandedMatrix.h"
-#include "CentralDifference.h"
+#include "FiniteDifference.h"
 #include <cmath>
 #include <string>
 #include <iostream>
 #include <fstream>
+#include "MultiQuantityMatrix.h"
 
 class ShallowWater {
     private:
-        // parameters
-        const double _dt; /// Time-step.
-        const double _t; /// Total integration time.
-        const int _nx; /// Number of grid points in x.
-        const int _ny; /// Number of grid points in y.
-        const int _n; /// Total number of grid points.
-        const int _ic; /// Index of the initial condition to use (1-4).
-        const bool _loopBlas;
-        const double _dx; /// Constant point spacing along x.
-        const double _dy; /// Constant point spacing along y.
-        const double _g; /// Acceleration due to gravity.
+        const double _dx;
+        const double _dy;
 
-        // grid
-        GeneralMatrix _U; /// Matrix (nx * ny) of x-component of velocity.
-        GeneralMatrix _V; /// Matrix (nx * ny) of y-component of velocity.
-        GeneralMatrix _H; /// Matrix (nx * ny) of surface height.
-
-        CentralDifference _cd;
-    
-        void _timeIntegrateLoop();
-        void _timeIntegrateBlas();
+        MultiQuantityMatrix _grid;
+        FiniteDifference _fd;
 
     public:
-        ShallowWater(const double dt, const double t, const int nx, const int ny, const int nc, const bool loopBlas);
-        ~ShallowWater();
+        ShallowWater(const int nx, const int ny, const double dx, const double dy);
 
-        void setInitialConditions();
-        void timeIntegrate();
+        void setInitialConditions(const int ic, const double meanH);
+        void timeIntegrate(const bool loopBlas, const double dt, const double t);
 
-        void exportData(const std::string& fname);
-
-        // getters
+        void exportGrid(const std::string& fname);
         void test();
-        GeneralMatrix getH() const;
 };
 
 #endif // SHALLOW_WATER_H

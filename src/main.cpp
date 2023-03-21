@@ -29,11 +29,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    ShallowWater sw(dt, t, nx, ny, ic, loopBlas);
-    sw.setInitialConditions();
-    sw.timeIntegrate();
+    ShallowWater sw(nx, ny, 1.0, 1.0);
+    sw.setInitialConditions(ic, 10.0);
+    sw.timeIntegrate(loopBlas, dt, t);
     // sw.test();
-    sw.exportData("output.txt");
+    sw.exportGrid("output.txt");
 
     return 0;
 }
