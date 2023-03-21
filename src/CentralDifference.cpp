@@ -15,19 +15,19 @@ CentralDifference::CentralDifference(
     _dy_t1(GeneralMatrix(3, 3)),
     _dy_t2(GeneralMatrix(3, 3))
 {
-    #pragma omp parallel default(shared)
-    {
-    #pragma omp sections
-    {
+    // #pragma omp parallel default(shared)
+    // {
+    // #pragma omp sections
+    // {
     
-    #pragma omp section
+    // #pragma omp section
     _generateDx();
 
-    #pragma omp section
+    // #pragma omp section
     _generateDy();
 
-    }
-    }
+    // }
+    // }
 }
 
 CentralDifference::~CentralDifference() {}
@@ -49,29 +49,29 @@ void CentralDifference::_generateDx() {
     // bottom left triangular matrix
     double t2[] = { c, b, a, 0., c, b, 0., 0., c };
 
-    #pragma omp parallel default(shared)
-    {
-    #pragma omp sections
-    {
+    // #pragma omp parallel default(shared)
+    // {
+    // #pragma omp sections
+    // {
 
     // banded matrix
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (int j = 0; j < _dx_d.n(); j++)
         for (int i = 0; i < _dx_d.ld(); i++)
             _dx_d.set(i, j, val[i]);
 
     // top right triangular matrix
-    #pragma omp section
+    // #pragma omp section
     for (int i = 0; i < _dx_t1.size(); i++)
         _dx_t1[i] = t1[i];
 
     // bottom left triangular matrix
-    #pragma omp section
+    // #pragma omp section
     for (int i = 0; i < _dx_t2.size(); i++)
         _dx_t2[i] = t2[i];
 
-    }
-    }
+    // }
+    // }
 }
 
 void CentralDifference::_generateDy() {
@@ -90,29 +90,29 @@ void CentralDifference::_generateDy() {
     // bottom left triangular matrix
     double t2[] = { c, b, a, 0., c, b, 0., 0., c };
 
-    #pragma omp parallel default(shared)
-    {
-    #pragma omp sections
-    {
+    // #pragma omp parallel default(shared)
+    // {
+    // #pragma omp sections
+    // {
 
     // banded matrix
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (int j = 0; j < _dy_d.n(); j++)
         for (int i = 0; i < _dy_d.ld(); i++)
             _dy_d.set(i, j, val[i]);
 
     // top right triangular matrix
-    #pragma omp section
+    // #pragma omp section
     for (int i = 0; i < _dy_t1.size(); i++)
         _dy_t1[i] = t1[i];
 
     // bottom left triangular matrix
-    #pragma omp section
+    // #pragma omp section
     for (int i = 0; i < _dy_t2.size(); i++)
         _dy_t2[i] = t2[i];
 
-    }
-    }
+    // }
+    // }
 }
 
 void CentralDifference::_performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& dAdx) {
@@ -120,7 +120,7 @@ void CentralDifference::_performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& 
     double b = - 3.0 / 20.0 / _dx;
     double c = 1.0 / 60.0 / _dx;
 
-    #pragma omp parallel for // num_threads(10)
+    // #pragma omp parallel for // num_threads(10)
     for (int j = 0; j < A.n(); j++) {
         // i = 0
         dAdx.set(0, j, -c*A.get(A.m()-3,j) -b*A.get(A.m()-2,j) -a*A.get(A.m()-1,j)
@@ -158,7 +158,7 @@ void CentralDifference::_performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& 
     double b = - 3.0 / 20.0 / _dy;
     double c = 1.0 / 60.0 / _dy;
 
-    #pragma omp parallel for // num_threads(10)
+    // #pragma omp parallel for // num_threads(10)
     for (int i = 0; i < A.m(); i++) {
         // j = 0
         dAdy.set(i, 0, -c*A.get(i,A.n()-3) -b*A.get(i,A.n()-2) -a*A.get(i,A.n()-1)
