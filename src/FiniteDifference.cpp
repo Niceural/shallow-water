@@ -48,115 +48,172 @@ FiniteDifference::~FiniteDifference() {
 //------------------------------------- central difference
 
 void FiniteDifference::centralDifference(const bool loopBlas, MultiQuantityMatrix& grid) {
-    // if (loopBlas) {
-    //     _centralDifferenceBlasX(grid);
-    //     _centralDifferenceBlasY(grid);
-    // } else {
-        _centralDifferenceLoopX(grid);
-        _centralDifferenceLoopY(grid);
-    // }
+    if (loopBlas) {
+        _centralDifferenceBlasX(grid);
+        _centralDifferenceBlasY(grid);
+    } else {
+        _centralDifferenceLoop(grid);
+        // _centralDifferenceLoopY(grid);
+    }
 }
 
 //------------------------------------- central difference loop
 
-void FiniteDifference::_centralDifferenceLoopX(MultiQuantityMatrix& grid) {
-    const double a = 3.0 / 4.0 / _dx;
-    const double b = - 3.0 / 20.0 / _dx;
-    const double c = 1.0 / 60.0 / _dx;
-
+void FiniteDifference::_centralDifferenceLoop(MultiQuantityMatrix& grid) {
     const int m = grid.m();
     const int n = grid.n();
 
+    const double ax = 3.0 / 4.0 / _dx;
+    const double bx = - 3.0 / 20.0 / _dx;
+    const double cx = 1.0 / 60.0 / _dx;
+
+    const double ay = 3.0 / 4.0 / _dy;
+    const double by = - 3.0 / 20.0 / _dy;
+    const double cy = 1.0 / 60.0 / _dy;
+
+    #pragma omp parallel default(shared)
+    {
+
+    // with respect to x, boundaries
+    #pragma omp for schedule(static) nowait
     for (int j = 0; j < n; j++) {
-        // U, V, and H
         for (int q = 0; q < 9; q+=3) {
             // i = 0
             grid.set(0, j, q+1,
-                -c*grid.get(m-3,j,q) -b*grid.get(m-2,j,q) -a*grid.get(m-1,j,q)
-                +a*grid.get(1,j,q) +b*grid.get(2,j,q) +c*grid.get(3,j,q));
+                -cx*grid.get(m-3,j,q) -bx*grid.get(m-2,j,q) -ax*grid.get(m-1,j,q)
+                +ax*grid.get(1,j,q) +bx*grid.get(2,j,q) +cx*grid.get(3,j,q));
             // i = 1
             grid.set(1, j, q+1,
-                -c*grid.get(m-2,j,q) -b*grid.get(m-1,j,q) -a*grid.get(0,j,q)
-                +a*grid.get(2,j,q) +b*grid.get(3,j,q) + c*grid.get(4,j,q));
+                -cx*grid.get(m-2,j,q) -bx*grid.get(m-1,j,q) -ax*grid.get(0,j,q)
+                +ax*grid.get(2,j,q) +bx*grid.get(3,j,q) + cx*grid.get(4,j,q));
             // i = 2
             grid.set(2, j, q+1,
-                -c*grid.get(m-1,j,q) -b*grid.get(0,j,q) -a*grid.get(1,j,q)
-                +a*grid.get(3,j,q) +b*grid.get(4,j,q) +c*grid.get(5,j,q));
+                -cx*grid.get(m-1,j,q) -bx*grid.get(0,j,q) -ax*grid.get(1,j,q)
+                +ax*grid.get(3,j,q) +bx*grid.get(4,j,q) +cx*grid.get(5,j,q));
+            // i = nx-3
+            grid.set(m-3, j, q+1,
+                -cx*grid.get(m-6,j,q) -bx*grid.get(m-5,j,q) -ax*grid.get(m-4,j,q)
+                +ax*grid.get(m-2,j,q) +bx*grid.get(m-1,j,q) +cx*grid.get(0,j,q));
+            // i = nx-2
+            grid.set(m-2, j, q+1,
+                -cx*grid.get(m-5,j,q) -bx*grid.get(m-4,j,q) -ax*grid.get(m-3,j,q)
+                +ax*grid.get(m-1,j,q) +bx*grid.get(0,j,q) +cx*grid.get(1,j,q));
+            // i = nx-1
+            grid.set(m-1, j, q+1,
+                -cx*grid.get(m-4,j,q) -bx*grid.get(m-3,j,q) -ax*grid.get(m-2,j,q)
+                +ax*grid.get(0,j,q) +bx*grid.get(1,j,q) +cx*grid.get(2,j,q));
         }
+    }
 
+    // with respect to x, boundaries independent
+    #pragma omp for schedule(static) nowait
+    for (int j = 0; j < n; j++) {
         for (int i = 3; i < m-3; i++) {
             for (int q = 0; q < 9; q+=3) {
                 grid.set(i, j, q+1,
-                    -c*grid.get(i-3,j,q) -b*grid.get(i-2,j,q) -a*grid.get(i-1,j,q)
-                    +a*grid.get(i+1,j,q) +b*grid.get(i+2,j,q) +c*grid.get(i+3,j,q));
+                    -cx*grid.get(i-3,j,q) -bx*grid.get(i-2,j,q) -ax*grid.get(i-1,j,q)
+                    +ax*grid.get(i+1,j,q) +bx*grid.get(i+2,j,q) +cx*grid.get(i+3,j,q));
             }
         }
-
-        for (int q = 0; q < 9; q+=3) {
-            // i = nx-3
-            grid.set(m-3, j, q+1,
-                -c*grid.get(m-6,j,q) -b*grid.get(m-5,j,q) -a*grid.get(m-4,j,q)
-                +a*grid.get(m-2,j,q) +b*grid.get(m-1,j,q) +c*grid.get(0,j,q));
-            // i = nx-2
-            grid.set(m-2, j, q+1,
-                -c*grid.get(m-5,j,q) -b*grid.get(m-4,j,q) -a*grid.get(m-3,j,q)
-                +a*grid.get(m-1,j,q) +b*grid.get(0,j,q) +c*grid.get(1,j,q));
-            // i = nx-1
-            grid.set(m-1, j, q+1,
-                -c*grid.get(m-4,j,q) -b*grid.get(m-3,j,q) -a*grid.get(m-2,j,q)
-                +a*grid.get(0,j,q) +b*grid.get(1,j,q) +c*grid.get(2,j,q));
-        }
     }
-}
 
-void FiniteDifference::_centralDifferenceLoopY(MultiQuantityMatrix& grid) {
-    const double a = 3.0 / 4.0 / _dy;
-    const double b = - 3.0 / 20.0 / _dy;
-    const double c = 1.0 / 60.0 / _dy;
-
-    const int m = grid.m();
-    const int n = grid.n();
-
+    // with respect to y, boundaries
+    #pragma omp for schedule(static) nowait
     for (int i = 0; i < m; i++) {
         for (int q = 0; q < 9; q += 3) {
             // j = 0
             grid.set(i, 0, q+2,
-                -c*grid.get(i,n-3,q) -b*grid.get(i,n-2,q) -a*grid.get(i,n-1,q)
-                +a*grid.get(i,1,q) +b*grid.get(i,2,q) +c*grid.get(i,3,q));
+                -cy*grid.get(i,n-3,q) -by*grid.get(i,n-2,q) -ay*grid.get(i,n-1,q)
+                +ay*grid.get(i,1,q) +by*grid.get(i,2,q) +cy*grid.get(i,3,q));
             // j = 1
             grid.set(i, 1, q+2,
-                -c*grid.get(i,n-2,q) -b*grid.get(i,n-1,q) -a*grid.get(i,0,q)
-                +a*grid.get(i,2,q) +b*grid.get(i,3,q) +c*grid.get(i,4,q));
+                -cy*grid.get(i,n-2,q) -by*grid.get(i,n-1,q) -ay*grid.get(i,0,q)
+                +ay*grid.get(i,2,q) +by*grid.get(i,3,q) +cy*grid.get(i,4,q));
             // j = 2
             grid.set(i, 2, q+2,
-                -c*grid.get(i,n-1,q) -b*grid.get(i,0,q) -a*grid.get(i,1,q)
-                +a*grid.get(i,3,q) +b*grid.get(i,4,q) +c*grid.get(i,5,q));
+                -cy*grid.get(i,n-1,q) -by*grid.get(i,0,q) -ay*grid.get(i,1,q)
+                +ay*grid.get(i,3,q) +by*grid.get(i,4,q) +cy*grid.get(i,5,q));
+            // j = ny-3
+            grid.set(i, n-3, q+2,
+                -cy*grid.get(i,n-6,q) -by*grid.get(i,n-5,q) -ay*grid.get(i,n-4,q)
+                +ay*grid.get(i,n-2,q) +by*grid.get(i,n-1,q) +cy*grid.get(i,0,q));
+            // j = ny-2
+            grid.set(i, n-2, q+2,
+                -cy*grid.get(i,n-5,q) -by*grid.get(i,n-4,q) -ay*grid.get(i,n-3,q)
+                +ay*grid.get(i,n-1,q) +by*grid.get(i,0,q) + cy*grid.get(i,1,q));
+            // j = ny-1
+            grid.set(i, n-1, q+2,
+                -cy*grid.get(i,n-4,q) -by*grid.get(i,n-3,q) -ay*grid.get(i,n-2,q)
+                +ay*grid.get(i,0,q) +by*grid.get(i,1,q) + cy*grid.get(i,2,q));
+        }
+    }
+
+    // with respect to y, boundaries independant
+    #pragma omp for schedule(static) nowait
+    for (int i = 0; i < m; i++) {
+        for (int j = 3; j < n-3; j++) {
+            for (int q = 0; q < 9; q += 3) {
+                grid.set(i, j, q+2,
+                    -cy*grid.get(i,j-3,q) -by*grid.get(i,j-2,q) -ay*grid.get(i,j-1,q)
+                    +ay*grid.get(i,j+1,q) +by*grid.get(i,j+2,q) +cy*grid.get(i,j+3,q));
+            }
+        }
+    }
+
+    }
+}
+
+/*
+void FiniteDifference::_centralDifferenceLoopY(MultiQuantityMatrix& grid) {
+    const double ay = 3.0 / 4.0 / _dy;
+    const double by = - 3.0 / 20.0 / _dy;
+    const double cy = 1.0 / 60.0 / _dy;
+
+    const int m = grid.m();
+    const int n = grid.n();
+
+    #pragma omp parallel for default(shared)
+    for (int i = 0; i < m; i++) {
+        for (int q = 0; q < 9; q += 3) {
+            // j = 0
+            grid.set(i, 0, q+2,
+                -cy*grid.get(i,n-3,q) -by*grid.get(i,n-2,q) -ay*grid.get(i,n-1,q)
+                +ay*grid.get(i,1,q) +by*grid.get(i,2,q) +cy*grid.get(i,3,q));
+            // j = 1
+            grid.set(i, 1, q+2,
+                -cy*grid.get(i,n-2,q) -by*grid.get(i,n-1,q) -ay*grid.get(i,0,q)
+                +ay*grid.get(i,2,q) +by*grid.get(i,3,q) +cy*grid.get(i,4,q));
+            // j = 2
+            grid.set(i, 2, q+2,
+                -cy*grid.get(i,n-1,q) -by*grid.get(i,0,q) -ay*grid.get(i,1,q)
+                +ay*grid.get(i,3,q) +by*grid.get(i,4,q) +cy*grid.get(i,5,q));
         }
 
         for (int j = 3; j < n-3; j++) {
             for (int q = 0; q < 9; q += 3) {
                 grid.set(i, j, q+2,
-                    -c*grid.get(i,j-3,q) -b*grid.get(i,j-2,q) -a*grid.get(i,j-1,q)
-                    +a*grid.get(i,j+1,q) +b*grid.get(i,j+2,q) +c*grid.get(i,j+3,q));
+                    -cy*grid.get(i,j-3,q) -by*grid.get(i,j-2,q) -ay*grid.get(i,j-1,q)
+                    +ay*grid.get(i,j+1,q) +by*grid.get(i,j+2,q) +cy*grid.get(i,j+3,q));
             }
         }
 
         for (int q = 0; q < 9; q += 3) {
             // j = ny-3
             grid.set(i, n-3, q+2,
-                -c*grid.get(i,n-6,q) -b*grid.get(i,n-5,q) -a*grid.get(i,n-4,q)
-                +a*grid.get(i,n-2,q) +b*grid.get(i,n-1,q) +c*grid.get(i,0,q));
+                -cy*grid.get(i,n-6,q) -by*grid.get(i,n-5,q) -ay*grid.get(i,n-4,q)
+                +ay*grid.get(i,n-2,q) +by*grid.get(i,n-1,q) +cy*grid.get(i,0,q));
             // j = ny-2
             grid.set(i, n-2, q+2,
-                -c*grid.get(i,n-5,q) -b*grid.get(i,n-4,q) -a*grid.get(i,n-3,q)
-                +a*grid.get(i,n-1,q) +b*grid.get(i,0,q) + c*grid.get(i,1,q));
+                -cy*grid.get(i,n-5,q) -by*grid.get(i,n-4,q) -ay*grid.get(i,n-3,q)
+                +ay*grid.get(i,n-1,q) +by*grid.get(i,0,q) + cy*grid.get(i,1,q));
             // j = ny-1
             grid.set(i, n-1, q+2,
-                -c*grid.get(i,n-4,q) -b*grid.get(i,n-3,q) -a*grid.get(i,n-2,q)
-                +a*grid.get(i,0,q) +b*grid.get(i,1,q) + c*grid.get(i,2,q));
+                -cy*grid.get(i,n-4,q) -by*grid.get(i,n-3,q) -ay*grid.get(i,n-2,q)
+                +ay*grid.get(i,0,q) +by*grid.get(i,1,q) + cy*grid.get(i,2,q));
         }
     }
 }
+*/
 
 //------------------------------------- central difference blas
 

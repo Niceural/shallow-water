@@ -93,11 +93,13 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
 
     double ct = 0.0; // current time
     while (ct < t) {
+        #pragma omp parallel
+        {
         //--------- k1
         // finite difference
         _fd.centralDifference(loopBlas, _grid);
-        // std::cout << _grid.get(40, 60, 7) << std::endl;
         // k1
+        #pragma omp for
         for (int id = 0; id < numPoints; id++) {
             k1.set(id, 0, -_grid.get(id,0)*_grid.get(id,1) -_grid.get(id,3)*_grid.get(id,2) -CONST_G*_grid.get(id,7));
             k1.set(id, 1, -_grid.get(id,0)*_grid.get(id,4) -_grid.get(id,3)*_grid.get(id,5) -CONST_G*_grid.get(id,8));
@@ -106,6 +108,7 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
 
         //--------- k2
         // update U, V, and H
+        #pragma omp for
         for (int id = 0; id < numPoints; id++) {
             tgrid.set(id, 0, _grid.get(id,0) +0.5*dt*k1.get(id,0));
             tgrid.set(id, 3, _grid.get(id,3) +0.5*dt*k1.get(id,1));
@@ -114,6 +117,7 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
         // central difference
         _fd.centralDifference(loopBlas, tgrid);
         // k2
+        #pragma omp for
         for (int id = 0; id < numPoints; id++) {
             k2.set(id, 0, -tgrid.get(id,0)*tgrid.get(id,1) -tgrid.get(id,3)*tgrid.get(id,2) -CONST_G*tgrid.get(id,7));
             k2.set(id, 1, -tgrid.get(id,0)*tgrid.get(id,4) -tgrid.get(id,3)*tgrid.get(id,5) -CONST_G*tgrid.get(id,8));
@@ -122,6 +126,7 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
 
         //--------- k3
         // update U, V, and H
+        #pragma omp for
         for (int id = 0; id < numPoints; id++) {
             tgrid.set(id, 0, _grid.get(id,0) +0.5*dt*k2.get(id,0));
             tgrid.set(id, 3, _grid.get(id,3) +0.5*dt*k2.get(id,1));
@@ -130,6 +135,7 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
         // finite difference
         _fd.centralDifference(loopBlas, tgrid);
         // k3
+        #pragma omp for
         for (int id = 0; id < numPoints; id++) {
             k3.set(id, 0, -tgrid.get(id,0)*tgrid.get(id,1) -tgrid.get(id,3)*tgrid.get(id,2) -CONST_G*tgrid.get(id,7));
             k3.set(id, 1, -tgrid.get(id,0)*tgrid.get(id,4) -tgrid.get(id,3)*tgrid.get(id,5) -CONST_G*tgrid.get(id,8));
@@ -138,6 +144,7 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
 
         //--------- k4
         // update U, V, and H
+        #pragma omp for
         for (int id = 0; id < numPoints; id++) {
             tgrid.set(id, 0, _grid.get(id,0) +dt*k3.get(id,0));
             tgrid.set(id, 3, _grid.get(id,3) +dt*k3.get(id,1));
@@ -146,6 +153,7 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
         // finite difference
         _fd.centralDifference(loopBlas, tgrid);
         // k4
+        #pragma omp for
         for (int id = 0; id < numPoints; id++) {
             k4.set(id, 0, -tgrid.get(id,0)*tgrid.get(id,1) -tgrid.get(id,3)*tgrid.get(id,2) -CONST_G*tgrid.get(id,7));
             k4.set(id, 1, -tgrid.get(id,0)*tgrid.get(id,4) -tgrid.get(id,3)*tgrid.get(id,5) -CONST_G*tgrid.get(id,8));
@@ -153,10 +161,12 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
         }
 
         // update U, V, and H
+        #pragma omp for
         for (int id = 0; id < numPoints; id++) {
             _grid.add(id, 0, (k1.get(id,0) +2.0*k2.get(id,0) +2.0*k3.get(id,0) +k4.get(id,0)) *dt/6.0);
             _grid.add(id, 3, (k1.get(id,1) +2.0*k2.get(id,1) +2.0*k3.get(id,1) +k4.get(id,1)) *dt/6.0);
             _grid.add(id, 6, (k1.get(id,2) +2.0*k2.get(id,2) +2.0*k3.get(id,2) +k4.get(id,2)) *dt/6.0);
+        }
         }
 
         ct += dt;

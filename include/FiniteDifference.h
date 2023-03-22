@@ -12,8 +12,8 @@ class FiniteDifference {
         const double _dx;
         const double _dy;
 
-        void _centralDifferenceLoopX(MultiQuantityMatrix& grid);
-        void _centralDifferenceLoopY(MultiQuantityMatrix& grid);
+        void _centralDifferenceLoop(MultiQuantityMatrix& grid);
+        // void _centralDifferenceLoopY(MultiQuantityMatrix& grid);
 
         SquareBandedMatrix _cd_d;
         GeneralMatrix _cd_t1;
