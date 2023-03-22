@@ -49,11 +49,9 @@ FiniteDifference::~FiniteDifference() {
 
 void FiniteDifference::centralDifference(const bool loopBlas, MultiQuantityMatrix& grid) {
     if (loopBlas) {
-        _centralDifferenceBlasX(grid);
-        _centralDifferenceBlasY(grid);
+        _centralDifferenceBlas(grid);
     } else {
         _centralDifferenceLoop(grid);
-        // _centralDifferenceLoopY(grid);
     }
 }
 
@@ -67,15 +65,19 @@ void FiniteDifference::_centralDifferenceLoop(MultiQuantityMatrix& grid) {
     const double bx = - 3.0 / 20.0 / _dx;
     const double cx = 1.0 / 60.0 / _dx;
 
+    // double xCoeffs[] = { -1/60/_dx, 3/20/_dx, -3/4/_dx, 3/4/_dx, -3/20/_dx, 1/60/_dx };
+    // double yCoeffs[] = { -1/60/_dy, 3/20/_dy, -3/4/_dy, 3/4/_dy, -3/20/_dy, 1/60/_dy };
+    // double temp[3];
+
     const double ay = 3.0 / 4.0 / _dy;
     const double by = - 3.0 / 20.0 / _dy;
     const double cy = 1.0 / 60.0 / _dy;
 
-    #pragma omp parallel default(shared)
+    #pragma omp parallel // default(shared)
     {
 
     // with respect to x, boundaries
-    #pragma omp for schedule(static) nowait
+    #pragma omp for // schedule(static) nowait
     for (int j = 0; j < n; j++) {
         for (int q = 0; q < 9; q+=3) {
             // i = 0
@@ -106,7 +108,7 @@ void FiniteDifference::_centralDifferenceLoop(MultiQuantityMatrix& grid) {
     }
 
     // with respect to x, boundaries independent
-    #pragma omp for schedule(static) nowait
+    #pragma omp for // schedule(static) nowait
     for (int j = 0; j < n; j++) {
         for (int i = 3; i < m-3; i++) {
             for (int q = 0; q < 9; q+=3) {
@@ -118,7 +120,7 @@ void FiniteDifference::_centralDifferenceLoop(MultiQuantityMatrix& grid) {
     }
 
     // with respect to y, boundaries
-    #pragma omp for schedule(static) nowait
+    #pragma omp for // schedule(static) nowait
     for (int i = 0; i < m; i++) {
         for (int q = 0; q < 9; q += 3) {
             // j = 0
@@ -149,13 +151,15 @@ void FiniteDifference::_centralDifferenceLoop(MultiQuantityMatrix& grid) {
     }
 
     // with respect to y, boundaries independant
-    #pragma omp for schedule(static) nowait
-    for (int i = 0; i < m; i++) {
-        for (int j = 3; j < n-3; j++) {
+    #pragma omp for // schedule(static) nowait
+    for (int j = 3; j < n-3; j++) {
+        for (int i = 0; i < m; i++) {
             for (int q = 0; q < 9; q += 3) {
                 grid.set(i, j, q+2,
                     -cy*grid.get(i,j-3,q) -by*grid.get(i,j-2,q) -ay*grid.get(i,j-1,q)
+                    // -cy*grid._arr[(i+j*m)*9+q] -by*grid._arr[(i+j*m)*9+q] -ay*grid._arr[(i+j*m)*9+q]
                     +ay*grid.get(i,j+1,q) +by*grid.get(i,j+2,q) +cy*grid.get(i,j+3,q));
+                    // +ay*grid._arr[(i+j*m)*9+q] +by*grid._arr[(i+j*m)*9+q] +cy*grid._arr[(i+j*m)*9+q]);
             }
         }
     }
@@ -217,15 +221,53 @@ void FiniteDifference::_centralDifferenceLoopY(MultiQuantityMatrix& grid) {
 
 //------------------------------------- central difference blas
 
-void FiniteDifference::_centralDifferenceBlasX(MultiQuantityMatrix& grid) {
-    // banded matrix
-    // for (int i = 0; i < grid.n(); i++) {
-    //     F77NAME(dgbmv)(
-    //         'N', _cd_d.n(), _cd_d.n(), _cd_d.kl(), _cd_d.ku(), 1.0, _cd_d.getPointer(0), _cd_d.ld(),
-    //         grid.getPointer(i*A.m()*)
-    //     );
-    // }
-}
+void FiniteDifference::_centralDifferenceBlas(MultiQuantityMatrix& grid) {
+    // wrt x
+    for (int j = 0; j < grid.n(); j++) {
+        for (int q = 0; q < grid.nq(); q += 3) {
+            // banded matrix
+            F77NAME(dgbmv)(
+                'N', _cd_d.n(), _cd_d.n(), _cd_d.kl(), _cd_d.ku(), 1.0, _cd_d.getPointer(0), _cd_d.ld(),
+                grid.getPointer(0, j, q), grid.nq(),
+                0.0, grid.getPointer(0, j, q+1), grid.nq()
+            );
+            // top right triangular matrix
+            F77NAME(dgemv)(
+                'N', _cd_t1.m(), _cd_t1.n(), 1.0, _cd_t1.getPointer(0), _cd_t1.m(),
+                grid.getPointer((grid.m()-3)*grid.nq(), j, q), grid.nq(),
+                1.0, grid.getPointer(0, j, q+1), grid.nq()
+            );
+            // bottom left triangular matrix
+            F77NAME(dgemv)(
+                'N', _cd_t2.m(), _cd_t2.n(), 1.0, _cd_t2.getPointer(0), _cd_t1.m(),
+                grid.getPointer(0, j, q), grid.nq(),
+                1.0, grid.getPointer((grid.m()-3)*grid.nq(), j, q+1), grid.nq()
+            );
+        }
+    }
 
-void FiniteDifference::_centralDifferenceBlasY(MultiQuantityMatrix& grid) {
+    // wrt y
+    for (int i = 0; i < grid.m(); i++) {
+        for (int q = 0; q < grid.nq(); q += 3) {
+            // banded matrix
+            F77NAME(dgbmv)(
+                'N', _cd_d.n(), _cd_d.n(), _cd_d.kl(), _cd_d.ku(), 1.0, _cd_d.getPointer(0), _cd_d.ld(),
+                grid.getPointer(i, 0, q), grid.m()*grid.nq(),
+                0.0, grid.getPointer(i, 0, q+2), grid.m()*grid.nq()
+            );
+            // top right triangular matrix
+            F77NAME(dgemv)(
+                'N', _cd_t1.m(), _cd_t1.n(), 1.0, _cd_t1.getPointer(0), _cd_t1.m(),
+                grid.getPointer(i, grid.n()-3, q), grid.m()*grid.nq(),
+                1.0, grid.getPointer(i, 0, q+2), grid.m()*grid.nq()
+            );
+            // bottom left triangular matrix
+            F77NAME(dgemv)(
+                'N', _cd_t2.m(), _cd_t2.n(), 1.0, _cd_t2.getPointer(0), _cd_t2.m(),
+                grid.getPointer(i, 0, q), grid.m()*grid.nq(),
+                1.0, grid.getPointer(i, grid.n()-3, q), grid.m()*grid.nq()
+            );
+        }
+    }
+
 }

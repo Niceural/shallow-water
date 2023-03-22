@@ -18,7 +18,8 @@ int main(int argc, char** argv) {
         ("T", po::value<double>(&t)->default_value(100.0), "Total integration time.")
         ("Nx", po::value<int>(&nx)->default_value(100), "Number of grid points in x.")
         ("Ny", po::value<int>(&ny)->default_value(100), "Number of grid points in y.")
-        ("ic", po::value<int>(&ic)->default_value(3), "Index of the initial condition to use (1-4).");
+        ("ic", po::value<int>(&ic)->default_value(3), "Index of the initial condition to use (1-4).")
+        ("lb", po::value<bool>(&loopBlas)->default_value(0), "0 for loop, 1 for BLAS.");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);

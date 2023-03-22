@@ -13,13 +13,11 @@ class FiniteDifference {
         const double _dy;
 
         void _centralDifferenceLoop(MultiQuantityMatrix& grid);
-        // void _centralDifferenceLoopY(MultiQuantityMatrix& grid);
 
         SquareBandedMatrix _cd_d;
         GeneralMatrix _cd_t1;
         GeneralMatrix _cd_t2;
-        void _centralDifferenceBlasX(MultiQuantityMatrix& grid);
-        void _centralDifferenceBlasY(MultiQuantityMatrix& grid);
+        void _centralDifferenceBlas(MultiQuantityMatrix& grid);
 
     public:
         FiniteDifference(const int m, const int n, const double dx, const double dy);
