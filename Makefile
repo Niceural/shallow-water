@@ -38,11 +38,13 @@ build:
 debug: CXXFLAGS += -DDEBUG -g
 debug: all
 
-release: CXXFLAGS += -O2
+release: CXXFLAGS += -O3
 release: all
 
-analyzer: CXXFLAGS += -O2 -DDEBUG -g
-analyzer: all
+analyze: CXXFLAGS += -O3 -DDEBUG -g
+analyze: all
+	rm -rf ./analyze.er
+	OMP_NUM_THREADS=8 collect -o analyze.er ./build/apps/shallowWater --T 100.0 --dt 0.1 --Nx 500 --Ny 500 --ic 3
 
 clean:
 	-@rm -rvf $(OBJ_DIR)/*
