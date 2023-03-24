@@ -20,8 +20,6 @@ FiniteDifference::FiniteDifference(
     _generateDy(dy);
 }
 
-FiniteDifference::~FiniteDifference() {}
-
 //------------------------------------- loop
 
 void FiniteDifference::loop(
@@ -42,7 +40,7 @@ void FiniteDifference::loop(
     //------------- independent of boundary
 
     // dUdx
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 0; j < U.n(); j++) {
         for (int i = 3; i < U.m()-3; i++) {
             temp=_cx3*U.get(i-1,j);
@@ -56,7 +54,7 @@ void FiniteDifference::loop(
     }
 
     // dVdx
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 0; j < U.n(); j++) {
         for (int i = 3; i < U.m()-3; i++) {
             temp=_cx3*V.get(i-1,j);
@@ -70,7 +68,7 @@ void FiniteDifference::loop(
     }
 
     // dHdx
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 0; j < U.n(); j++) {
         for (int i = 3; i < U.m()-3; i++) {
             temp=_cx3*H.get(i-1,j);
@@ -84,7 +82,7 @@ void FiniteDifference::loop(
     }
 
     // dUdy
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 3; j < U.n()-3; j++) {
         for (int i = 0; i < U.m(); i++) {
             temp=_cy3*U.get(i,j-1);
@@ -98,7 +96,7 @@ void FiniteDifference::loop(
     }
 
     // dVdy
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 3; j < U.n()-3; j++) {
         for (int i = 0; i < U.m(); i++) {
             temp=_cy3*V.get(i,j-1);
@@ -112,7 +110,7 @@ void FiniteDifference::loop(
     }
 
     // dHdy
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 3; j < U.n()-3; j++) {
         for (int i = 0; i < U.m(); i++) {
             temp=_cy3*H.get(i,j-1);
@@ -128,7 +126,7 @@ void FiniteDifference::loop(
     //------------- boundaries x
 
     // U
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 0; j < U.n(); j++) {
         // i = 0
         temp=_cx1*U.get(U.m()-3,j); temp+=_cx2*U.get(U.m()-2,j); temp+=_cx3*U.get(U.m()-1,j);
@@ -145,7 +143,7 @@ void FiniteDifference::loop(
     }
 
     // U
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 0; j < U.n(); j++) {
         // i = nx-3
         temp=_cx1*U.get(U.m()-6,j); temp+=_cx2*U.get(U.m()-5,j); temp+=_cx3*U.get(U.m()-4,j);
@@ -162,7 +160,7 @@ void FiniteDifference::loop(
     }
 
     // V
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 0; j < U.n(); j++) {
         // i = 0
         temp=_cx1*V.get(V.m()-3,j); temp+=_cx2*V.get(V.m()-2,j); temp+=_cx3*V.get(V.m()-1,j);
@@ -179,7 +177,7 @@ void FiniteDifference::loop(
     }
 
     // V
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 0; j < U.n(); j++) {
         // i = nx-3
         temp=_cx1*V.get(V.m()-6,j); temp+=_cx2*V.get(V.m()-5,j); temp+=_cx3*V.get(V.m()-4,j);
@@ -196,7 +194,7 @@ void FiniteDifference::loop(
     }
 
     // H
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 0; j < U.n(); j++) {
         // i = 0
         temp=_cx1*H.get(H.m()-3,j); temp+=_cx2*H.get(H.m()-2,j); temp+=_cx3*H.get(H.m()-1,j);
@@ -213,7 +211,7 @@ void FiniteDifference::loop(
     }
 
     // H
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int j = 0; j < U.n(); j++) {
         // i = nx-3
         temp=_cx1*H.get(H.m()-6,j); temp+=_cx2*H.get(H.m()-5,j); temp+=_cx3*H.get(H.m()-4,j);
@@ -232,7 +230,7 @@ void FiniteDifference::loop(
     //------------- boundaries y
 
     // U
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int i = 0; i < U.m(); i++) {
         // j = 0
         temp=_cy1*U.get(i,U.n()-3); temp+=_cy2*U.get(i,U.n()-2); temp+=_cy3*U.get(i,U.n()-1);
@@ -249,7 +247,7 @@ void FiniteDifference::loop(
     }
 
     // U
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int i = 0; i < U.m(); i++) {
         // j = ny-3
         temp=_cy1*U.get(i,U.n()-6); temp+=_cy2*U.get(i,U.n()-5); temp+=_cy3*U.get(i,U.n()-4);
@@ -266,7 +264,7 @@ void FiniteDifference::loop(
     }
 
     // V
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int i = 0; i < U.m(); i++) {
         // j = 0
         temp=_cy1*V.get(i,V.n()-3); temp+=_cy2*V.get(i,V.n()-2); temp+=_cy3*V.get(i,V.n()-1);
@@ -283,7 +281,7 @@ void FiniteDifference::loop(
     }
 
     // V
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int i = 0; i < U.m(); i++) {
         // j = ny-3
         temp=_cy1*V.get(i,V.n()-6); temp+=_cy2*V.get(i,V.n()-5); temp+=_cy3*V.get(i,V.n()-4);
@@ -300,7 +298,7 @@ void FiniteDifference::loop(
     }
 
     // H
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int i = 0; i < U.m(); i++) {
         // j = 0
         temp=_cy1*H.get(i,H.n()-3); temp+=_cy2*H.get(i,H.n()-2); temp+=_cy3*H.get(i,H.n()-1);
@@ -317,7 +315,7 @@ void FiniteDifference::loop(
     }
 
     // H
-    #pragma omp for nowait schedule(static, CHUNK)
+    #pragma omp for nowait schedule(static)
     for (int i = 0; i < U.m(); i++) {
         // j = ny-3
         temp=_cy1*H.get(i,H.n()-6); temp+=_cy2*H.get(i,H.n()-5); temp+=_cy3*H.get(i,H.n()-4);

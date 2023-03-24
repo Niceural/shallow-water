@@ -8,7 +8,7 @@
 /// @brief Performs finite difference with a BLAS or a loop implementation.
 class FiniteDifference {
     private:
-        // variables for the loop implementation
+        // coefficients for the loop implementation
         const double _cx1, _cx2, _cx3, _cx4, _cx5, _cx6;
         const double _cy1, _cy2, _cy3, _cy4, _cy5, _cy6;
 
@@ -26,9 +26,14 @@ class FiniteDifference {
         void _generateDy(const double dy);
     
     public:
+        /// @brief Constructor.
+        /// @param m Number of rows in the grid matrix.
+        /// @param n Number of columns in the grid matrix.
+        /// @param dx Constant point spacing in x.
+        /// @param dy Constant point spacing in y.
         FiniteDifference(const int m, const int n, const double dx, const double dy);
-        ~FiniteDifference();
 
+        /// @brief Perform finite difference using a loop implementation.
         void loop(
             const GeneralMatrix& U,
             const GeneralMatrix& V,
@@ -41,6 +46,7 @@ class FiniteDifference {
             GeneralMatrix& dHdy
         );
 
+        /// @brief Perform finite difference using a BLAS implementation.
         void blas(
             const GeneralMatrix& U,
             const GeneralMatrix& V,

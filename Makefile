@@ -44,7 +44,7 @@ release: all
 analyze: CXXFLAGS += -O3 -march=native -DDEBUG -g
 analyze: all
 	rm -rf ./analyze.er
-	OMP_NUM_THREADS=1 collect -o analyze.er ./build/apps/shallowWater --T 80.0 --dt 0.1 --Nx 100 --Ny 100 --ic 3 --lb 0
+	OMP_NUM_THREADS=4 collect -o analyze.er ./build/apps/shallowWater --T 80.0 --dt 0.1 --Nx 100 --Ny 100 --ic 3 --lb 0
 
 clean:
 	-@rm -rvf $(OBJ_DIR)/*
