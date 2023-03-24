@@ -117,9 +117,6 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
     GeneralMatrix tV(_V.m(), _V.n());
     GeneralMatrix tH(_H.m(), _H.n());
 
-    // #pragma omp parallel
-    // {
-
     for (int iter = 0; iter < numIter; iter++) {
         //--------- k1
         // finite difference
@@ -196,8 +193,6 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
             _H[i] += (k1H[i] + 2.0*k2H[i] + 2.0*k3H[i] + k4H[i]) *dt / 6.0;
         }
     }
-
-    // } // omp parallel
 }
 
 void ShallowWater::exportData(const std::string& fname) {
