@@ -9,6 +9,7 @@ int main(int argc, char** argv) {
     boost::timer::auto_cpu_timer timer("%t sec CPU, %w sec real\n");
     double dt = 0.1; double t = 80.0;
     int nx = 100; int ny = 100;
+    double dx = 1.0; double dy = 1.0;
     int ic = 3; bool loopBlas = 0;
 
     po::options_description desc("Allowed options");
@@ -18,6 +19,8 @@ int main(int argc, char** argv) {
         ("T", po::value<double>(&t)->default_value(80.0), "Total integration time.")
         ("Nx", po::value<int>(&nx)->default_value(100), "Number of grid points in x.")
         ("Ny", po::value<int>(&ny)->default_value(100), "Number of grid points in y.")
+        ("dx", po::value<double>(&dx)->default_value(1.0), "Constant point spacing along x")
+        ("dy", po::value<double>(&dy)->default_value(1.0), "Constant point spacing along y")
         ("ic", po::value<int>(&ic)->default_value(3), "Index of the initial condition to use (1-4).")
         ("lb", po::value<bool>(&loopBlas)->default_value(0), "0 for loop, 1 for BLAS");
 
@@ -33,7 +36,6 @@ int main(int argc, char** argv) {
     ShallowWater sw(nx, ny, 1.0, 1.0);
     sw.setInitialConditions(ic);
     sw.timeIntegrate(loopBlas, dt, t);
-    // sw.test();
     sw.exportData("output.txt");
 
     return 0;

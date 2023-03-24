@@ -5,31 +5,29 @@
 #include "./matrices/SquareBandedMatrix.h"
 #include <omp.h>
 
+/// @brief Performs finite difference with a BLAS or a loop implementation.
 class FiniteDifference {
     private:
-        // const int _m;
-        // const int _n;
-        // const double _dx;
-        // const double _dy;
+        // variables for the loop implementation
+        const double _invdx;
+        const double _invdy;
+        // loop
         const double _clx[6];
         const double _cly[6];
 
-        // SquareBandedMatrix _dx_d;
-        // GeneralMatrix _dx_t1;
-        // GeneralMatrix _dx_t2;
-        // void _generateDx();
+        // variables for the blas implementation
+        // blas wrt x
+        SquareBandedMatrix _dx_d;
+        GeneralMatrix _dx_t1;
+        GeneralMatrix _dx_t2;
+        void _generateDx(const double dx);
 
-        // SquareBandedMatrix _dy_d;
-        // GeneralMatrix _dy_t1;
-        // GeneralMatrix _dy_t2;
-        // void _generateDy();
+        // blas wrt y
+        SquareBandedMatrix _dy_d;
+        GeneralMatrix _dy_t1;
+        GeneralMatrix _dy_t2;
+        void _generateDy(const double dy);
     
-        // void _performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& dAdx);
-        // void _performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& dAdy);
-
-        // void _performWrtXBlas(const GeneralMatrix& A, GeneralMatrix& dAdx);
-        // void _performWrtYBlas(const GeneralMatrix& A, GeneralMatrix& dAdy);
-
     public:
         FiniteDifference(const int m, const int n, const double dx, const double dy);
         ~FiniteDifference();

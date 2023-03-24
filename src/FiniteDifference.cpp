@@ -1,36 +1,33 @@
 #include "../include/FiniteDifference.h"
 #define CHUNK 8
+#define COEFF_1 -1.0/60.0
+#define COEFF_2 3.0/20.0
+#define COEFF_3 -3.0/4.0
+#define COEFF_4 3.0/4.0
+#define COEFF_5 -3.0/20.0
+#define COEFF_6 1.0/60.0
 
 FiniteDifference::FiniteDifference(
     const int m, const int n,
     const double dx, const double dy
 ):
+    _invdx(1.0/dx), _invdy(1.0/dy),
+
     _clx{ -1.0/60.0/dx, 3.0/20.0/dx, -3.0/4.0/dx, 3.0/4.0/dx, -3.0/20.0/dx, 1.0/60.0/dx },
-    _cly{ -1.0/60.0/dy, 3.0/20.0/dy, -3.0/4.0/dy, 3.0/4.0/dy, -3.0/20.0/dy, 1.0/60.0/dy }
+    _cly{ -1.0/60.0/dy, 3.0/20.0/dy, -3.0/4.0/dy, 3.0/4.0/dy, -3.0/20.0/dy, 1.0/60.0/dy },
     // _m(m), _n(n),
     // _dx(dx), _dy(dy),
 
-    // _dx_d(SquareBandedMatrix(m, 3, 3, 7)),
-    // _dx_t1(GeneralMatrix(3, 3)),
-    // _dx_t2(GeneralMatrix(3, 3)),
+    _dx_d(SquareBandedMatrix(m, 3, 3, 7)),
+    _dx_t1(GeneralMatrix(3, 3)),
+    _dx_t2(GeneralMatrix(3, 3)),
 
-    // _dy_d(SquareBandedMatrix(n, 3, 3, 7)),
-    // _dy_t1(GeneralMatrix(3, 3)),
-    // _dy_t2(GeneralMatrix(3, 3))
+    _dy_d(SquareBandedMatrix(n, 3, 3, 7)),
+    _dy_t1(GeneralMatrix(3, 3)),
+    _dy_t2(GeneralMatrix(3, 3))
 {
-    // #pragma omp parallel default(shared)
-    // {
-    // #pragma omp sections
-    // {
-    
-    // #pragma omp section
-    // _generateDx();
-
-    // #pragma omp section
-    // _generateDy();
-
-    // }
-    // }
+    _generateDx(dx);
+    _generateDy(dy);
 }
 
 FiniteDifference::~FiniteDifference() {}
@@ -48,26 +45,22 @@ void FiniteDifference::loop(
     GeneralMatrix& dHdx,
     GeneralMatrix& dHdy
 ) {
-    const double _dx = 1.0;
-    const double _dy = 1.0;
-    double temp = 0.0;
-
-    #pragma omp parallel default(shared) private(temp)
+    #pragma omp parallel default(shared)
     {
 
+    double temp = 0.0;
     //------------- independent of boundary
 
     // dUdx
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 0; j < U.n(); j++) {
         for (int i = 3; i < U.m()-3; i++) {
-            U.get(i, j);
-            temp=-3.0/4.0/_dx*U.get(i-1,j);
-            temp+=-1.0/60.0/_dx*U.get(i-3,j);  
-            temp+=3.0/20.0/_dx*U.get(i-2,j);
-            temp+=3.0/4.0/_dx*U.get(i+1,j);
-            temp+=-3.0/20.0/_dx*U.get(i+2,j);
-            temp+=1.0/60.0/_dx*U.get(i+3,j);
+            temp=COEFF_3*_invdx*U.get(i-1,j);
+            temp+=COEFF_1*_invdx*U.get(i-3,j);  
+            temp+=COEFF_2*_invdx*U.get(i-2,j);
+            temp+=COEFF_4*_invdx*U.get(i+1,j);
+            temp+=COEFF_5*_invdx*U.get(i+2,j);
+            temp+=COEFF_6*_invdx*U.get(i+3,j);
             dUdx.set(i, j, temp);
         }
     }
@@ -76,12 +69,12 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 0; j < U.n(); j++) {
         for (int i = 3; i < U.m()-3; i++) {
-            temp=_clx[2]*V.get(i-1,j);
-            temp+=_clx[0]*V.get(i-3,j);
-            temp+=_clx[1]*V.get(i-2,j);
-            temp+=_clx[3]*V.get(i+1,j);
-            temp+=_clx[4]*V.get(i+2,j);
-            temp+=_clx[5]*V.get(i+3,j);
+            temp=COEFF_3*_invdx*V.get(i-1,j);
+            temp+=COEFF_1*_invdx*V.get(i-3,j);
+            temp+=COEFF_2*_invdx*V.get(i-2,j);
+            temp+=COEFF_4*_invdx*V.get(i+1,j);
+            temp+=COEFF_5*_invdx*V.get(i+2,j);
+            temp+=COEFF_6*_invdx*V.get(i+3,j);
             dVdx.set(i, j, temp);
         }
     }
@@ -90,12 +83,12 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 0; j < U.n(); j++) {
         for (int i = 3; i < U.m()-3; i++) {
-            temp=_clx[2]*H.get(i-1,j);
-            temp+=_clx[0]*H.get(i-3,j);
-            temp+=_clx[1]*H.get(i-2,j);
-            temp+=_clx[3]*H.get(i+1,j);
-            temp+=_clx[4]*H.get(i+2,j);
-            temp+=_clx[5]*H.get(i+3,j);
+            temp=COEFF_3*_invdx*H.get(i-1,j);
+            temp+=COEFF_1*_invdx*H.get(i-3,j);
+            temp+=COEFF_2*_invdx*H.get(i-2,j);
+            temp+=COEFF_4*_invdx*H.get(i+1,j);
+            temp+=COEFF_5*_invdx*H.get(i+2,j);
+            temp+=COEFF_6*_invdx*H.get(i+3,j);
             dHdx.set(i, j, temp);
         }
     }
@@ -104,12 +97,12 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 3; j < U.n()-3; j++) {
         for (int i = 0; i < U.m(); i++) {
-            temp=_cly[2]*U.get(i,j-1);
-            temp+=_cly[0]*U.get(i,j-3);
-            temp+=_cly[1]*U.get(i,j-2);
-            temp+=_cly[3]*U.get(i,j+1);
-            temp+=_cly[4]*U.get(i,j+2);
-            temp+=_cly[5]*U.get(i,j+3);
+            temp=COEFF_3*_invdy*U.get(i,j-1);
+            temp+=COEFF_1*_invdy*U.get(i,j-3);
+            temp+=COEFF_2*_invdy*U.get(i,j-2);
+            temp+=COEFF_4*_invdy*U.get(i,j+1);
+            temp+=COEFF_5*_invdy*U.get(i,j+2);
+            temp+=COEFF_6*_invdy*U.get(i,j+3);
             dUdy.set(i, j, temp);
         }
     }
@@ -118,12 +111,12 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 3; j < U.n()-3; j++) {
         for (int i = 0; i < U.m(); i++) {
-            temp=_cly[2]*V.get(i,j-1);
-            temp+=_cly[0]*V.get(i,j-3);
-            temp+=_cly[1]*V.get(i,j-2);
-            temp+=_cly[3]*V.get(i,j+1);
-            temp+=_cly[4]*V.get(i,j+2);
-            temp+=_cly[5]*V.get(i,j+3);
+            temp=COEFF_3*_invdy*V.get(i,j-1);
+            temp+=COEFF_1*_invdy*V.get(i,j-3);
+            temp+=COEFF_2*_invdy*V.get(i,j-2);
+            temp+=COEFF_4*_invdy*V.get(i,j+1);
+            temp+=COEFF_5*_invdy*V.get(i,j+2);
+            temp+=COEFF_6*_invdy*V.get(i,j+3);
             dVdy.set(i, j, temp);
         }
     }
@@ -132,12 +125,12 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 3; j < U.n()-3; j++) {
         for (int i = 0; i < U.m(); i++) {
-            temp=_cly[2]*H.get(i,j-1);
-            temp+=_cly[0]*H.get(i,j-3);
-            temp+=_cly[1]*H.get(i,j-2);
-            temp+=_cly[3]*H.get(i,j+1);
-            temp+=_cly[4]*H.get(i,j+2);
-            temp+=_cly[5]*H.get(i,j+3);
+            temp=COEFF_3*_invdy*H.get(i,j-1);
+            temp+=COEFF_1*_invdy*H.get(i,j-3);
+            temp+=COEFF_2*_invdy*H.get(i,j-2);
+            temp+=COEFF_4*_invdy*H.get(i,j+1);
+            temp+=COEFF_5*_invdy*H.get(i,j+2);
+            temp+=COEFF_6*_invdy*H.get(i,j+3);
             dHdy.set(i, j, temp);
         }
     }
@@ -148,16 +141,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 0; j < U.n(); j++) {
         // i = 0
-        temp=_clx[0]*U.get(U.m()-3,j); temp+=_clx[1]*U.get(U.m()-2,j); temp+=_clx[2]*U.get(U.m()-1,j);
-        temp+=_clx[3]*U.get(1,j); temp+=_clx[4]*U.get(2,j); temp+=_clx[5]*U.get(3,j);
+        temp=COEFF_1*_invdx*U.get(U.m()-3,j); temp+=COEFF_2*_invdx*U.get(U.m()-2,j); temp+=COEFF_3*_invdx*U.get(U.m()-1,j);
+        temp+=COEFF_4*_invdx*U.get(1,j); temp+=COEFF_5*_invdx*U.get(2,j); temp+=COEFF_6*_invdx*U.get(3,j);
         dUdx.set(0, j, temp);
         // i = 1
-        temp=_clx[0]*U.get(U.m()-2,j); temp+=_clx[1]*U.get(U.m()-1,j); temp+=_clx[2]*U.get(0,j);
-        temp+=_clx[3]*U.get(2,j); temp+=_clx[4]*U.get(3,j); temp+=_clx[5]*U.get(4,j);
+        temp=COEFF_1*_invdx*U.get(U.m()-2,j); temp+=COEFF_2*_invdx*U.get(U.m()-1,j); temp+=COEFF_3*_invdx*U.get(0,j);
+        temp+=COEFF_4*_invdx*U.get(2,j); temp+=COEFF_5*_invdx*U.get(3,j); temp+=COEFF_6*_invdx*U.get(4,j);
         dUdx.set(1, j, temp);
         // i = 2
-        temp=_clx[0]*U.get(U.m()-1,j); temp+=_clx[1]*U.get(0,j); temp+=_clx[2]*U.get(1,j);
-        temp+=_clx[3]*U.get(3,j); temp+=_clx[4]*U.get(4,j); temp+=_clx[5]*U.get(5,j);
+        temp=COEFF_1*_invdx*U.get(U.m()-1,j); temp+=COEFF_2*_invdx*U.get(0,j); temp+=COEFF_3*_invdx*U.get(1,j);
+        temp+=COEFF_4*_invdx*U.get(3,j); temp+=COEFF_5*_invdx*U.get(4,j); temp+=COEFF_6*_invdx*U.get(5,j);
         dUdx.set(2, j, temp);
     }
 
@@ -165,16 +158,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 0; j < U.n(); j++) {
         // i = nx-3
-        temp=_clx[0]*U.get(U.m()-6,j); temp+=_clx[1]*U.get(U.m()-5,j); temp+=_clx[2]*U.get(U.m()-4,j);
-        temp+=_clx[3]*U.get(U.m()-2,j); temp+=_clx[4]*U.get(U.m()-1,j); temp+=_clx[5]*U.get(0,j);
+        temp=COEFF_1*_invdx*U.get(U.m()-6,j); temp+=COEFF_2*_invdx*U.get(U.m()-5,j); temp+=COEFF_3*_invdx*U.get(U.m()-4,j);
+        temp+=COEFF_4*_invdx*U.get(U.m()-2,j); temp+=COEFF_5*_invdx*U.get(U.m()-1,j); temp+=COEFF_6*_invdx*U.get(0,j);
         dUdx.set(U.m()-3, j, temp);
         // i = nx-2
-        temp=_clx[0]*U.get(U.m()-5,j); temp+=_clx[1]*U.get(U.m()-4,j); temp+=_clx[2]*U.get(U.m()-3,j);
-        temp+=_clx[3]*U.get(U.m()-1,j); temp+=_clx[4]*U.get(0,j); temp+=_clx[5]*U.get(1,j);
+        temp=COEFF_1*_invdx*U.get(U.m()-5,j); temp+=COEFF_2*_invdx*U.get(U.m()-4,j); temp+=COEFF_3*_invdx*U.get(U.m()-3,j);
+        temp+=COEFF_4*_invdx*U.get(U.m()-1,j); temp+=COEFF_5*_invdx*U.get(0,j); temp+=COEFF_6*_invdx*U.get(1,j);
         dUdx.set(U.m()-2, j, temp);
         // i = nx-1
-        temp=_clx[0]*U.get(U.m()-4,j); temp+=_clx[1]*U.get(U.m()-3,j); temp+=_clx[2]*U.get(U.m()-2,j);
-        temp+=_clx[3]*U.get(0,j); temp+=_clx[4]*U.get(1,j); temp+=_clx[5]*U.get(2,j);
+        temp=COEFF_1*_invdx*U.get(U.m()-4,j); temp+=COEFF_2*_invdx*U.get(U.m()-3,j); temp+=COEFF_3*_invdx*U.get(U.m()-2,j);
+        temp+=COEFF_4*_invdx*U.get(0,j); temp+=COEFF_5*_invdx*U.get(1,j); temp+=COEFF_6*_invdx*U.get(2,j);
         dUdx.set(U.m()-1, j, temp);
     }
 
@@ -182,16 +175,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 0; j < U.n(); j++) {
         // i = 0
-        temp=_clx[0]*V.get(V.m()-3,j); temp+=_clx[1]*V.get(V.m()-2,j); temp+=_clx[2]*V.get(V.m()-1,j);
-        temp+=_clx[3]*V.get(1,j); temp+=_clx[4]*V.get(2,j); temp+=_clx[5]*V.get(3,j);
+        temp=COEFF_1*_invdx*V.get(V.m()-3,j); temp+=COEFF_2*_invdx*V.get(V.m()-2,j); temp+=COEFF_3*_invdx*V.get(V.m()-1,j);
+        temp+=COEFF_4*_invdx*V.get(1,j); temp+=COEFF_5*_invdx*V.get(2,j); temp+=COEFF_6*_invdx*V.get(3,j);
         dVdx.set(0, j, temp);
         // i = 1
-        temp=_clx[0]*V.get(V.m()-2,j); temp+=_clx[1]*V.get(V.m()-1,j); temp+=_clx[2]*V.get(0,j);
-        temp+=_clx[3]*V.get(2,j); temp+=_clx[4]*V.get(3,j); temp+=_clx[5]*V.get(4,j);
+        temp=COEFF_1*_invdx*V.get(V.m()-2,j); temp+=COEFF_2*_invdx*V.get(V.m()-1,j); temp+=COEFF_3*_invdx*V.get(0,j);
+        temp+=COEFF_4*_invdx*V.get(2,j); temp+=COEFF_5*_invdx*V.get(3,j); temp+=COEFF_6*_invdx*V.get(4,j);
         dVdx.set(1, j, temp);
         // i = 2
-        temp=_clx[0]*V.get(V.m()-1,j); temp+=_clx[1]*V.get(0,j); temp+=_clx[2]*V.get(1,j);
-        temp+=_clx[3]*V.get(3,j); temp+=_clx[4]*V.get(4,j); temp+=_clx[5]*V.get(5,j);
+        temp=COEFF_1*_invdx*V.get(V.m()-1,j); temp+=COEFF_2*_invdx*V.get(0,j); temp+=COEFF_3*_invdx*V.get(1,j);
+        temp+=COEFF_4*_invdx*V.get(3,j); temp+=COEFF_5*_invdx*V.get(4,j); temp+=COEFF_6*_invdx*V.get(5,j);
         dVdx.set(2, j, temp);
     }
 
@@ -199,16 +192,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 0; j < U.n(); j++) {
         // i = nx-3
-        temp=_clx[0]*V.get(V.m()-6,j); temp+=_clx[1]*V.get(V.m()-5,j); temp+=_clx[2]*V.get(V.m()-4,j);
-        temp+=_clx[3]*V.get(V.m()-2,j); temp+=_clx[4]*V.get(V.m()-1,j); temp+=_clx[5]*V.get(0,j);
+        temp=COEFF_1*_invdx*V.get(V.m()-6,j); temp+=COEFF_2*_invdx*V.get(V.m()-5,j); temp+=COEFF_3*_invdx*V.get(V.m()-4,j);
+        temp+=COEFF_4*_invdx*V.get(V.m()-2,j); temp+=COEFF_5*_invdx*V.get(V.m()-1,j); temp+=COEFF_6*_invdx*V.get(0,j);
         dVdx.set(V.m()-3, j, temp);
         // i = nx-2
-        temp=_clx[0]*V.get(V.m()-5,j); temp+=_clx[1]*V.get(V.m()-4,j); temp+=_clx[2]*V.get(V.m()-3,j);
-        temp+=_clx[3]*V.get(V.m()-1,j); temp+=_clx[4]*V.get(0,j); temp+=_clx[5]*V.get(1,j);
+        temp=COEFF_1*_invdx*V.get(V.m()-5,j); temp+=COEFF_2*_invdx*V.get(V.m()-4,j); temp+=COEFF_3*_invdx*V.get(V.m()-3,j);
+        temp+=COEFF_4*_invdx*V.get(V.m()-1,j); temp+=COEFF_5*_invdx*V.get(0,j); temp+=COEFF_6*_invdx*V.get(1,j);
         dVdx.set(V.m()-2, j, temp);
         // i = nx-1
-        temp=_clx[0]*V.get(V.m()-4,j); temp+=_clx[1]*V.get(V.m()-3,j); temp+=_clx[2]*V.get(V.m()-2,j);
-        temp+=_clx[3]*V.get(0,j); temp+=_clx[4]*V.get(1,j); temp+=_clx[5]*V.get(2,j);
+        temp=COEFF_1*_invdx*V.get(V.m()-4,j); temp+=COEFF_2*_invdx*V.get(V.m()-3,j); temp+=COEFF_3*_invdx*V.get(V.m()-2,j);
+        temp+=COEFF_4*_invdx*V.get(0,j); temp+=COEFF_5*_invdx*V.get(1,j); temp+=COEFF_6*_invdx*V.get(2,j);
         dVdx.set(V.m()-1, j, temp);
     }
 
@@ -216,16 +209,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 0; j < U.n(); j++) {
         // i = 0
-        temp=_clx[0]*H.get(H.m()-3,j); temp+=_clx[1]*H.get(H.m()-2,j); temp+=_clx[2]*H.get(H.m()-1,j);
-        temp+=_clx[3]*H.get(1,j); temp+=_clx[4]*H.get(2,j); temp+=_clx[5]*H.get(3,j);
+        temp=COEFF_1*_invdx*H.get(H.m()-3,j); temp+=COEFF_2*_invdx*H.get(H.m()-2,j); temp+=COEFF_3*_invdx*H.get(H.m()-1,j);
+        temp+=COEFF_4*_invdx*H.get(1,j); temp+=COEFF_5*_invdx*H.get(2,j); temp+=COEFF_6*_invdx*H.get(3,j);
         dHdx.set(0, j, temp);
         // i = 1
-        temp=_clx[0]*H.get(H.m()-2,j); temp+=_clx[1]*H.get(H.m()-1,j); temp+=_clx[2]*H.get(0,j);
-        temp+=_clx[3]*H.get(2,j); temp+=_clx[4]*H.get(3,j); temp+=_clx[5]*H.get(4,j);
+        temp=COEFF_1*_invdx*H.get(H.m()-2,j); temp+=COEFF_2*_invdx*H.get(H.m()-1,j); temp+=COEFF_3*_invdx*H.get(0,j);
+        temp+=COEFF_4*_invdx*H.get(2,j); temp+=COEFF_5*_invdx*H.get(3,j); temp+=COEFF_6*_invdx*H.get(4,j);
         dHdx.set(1, j, temp);
         // i = 2
-        temp=_clx[0]*H.get(H.m()-1,j); temp+=_clx[1]*H.get(0,j); temp+=_clx[2]*H.get(1,j);
-        temp+=_clx[3]*H.get(3,j); temp+=_clx[4]*H.get(4,j); temp+=_clx[5]*H.get(5,j);
+        temp=COEFF_1*_invdx*H.get(H.m()-1,j); temp+=COEFF_2*_invdx*H.get(0,j); temp+=COEFF_3*_invdx*H.get(1,j);
+        temp+=COEFF_4*_invdx*H.get(3,j); temp+=COEFF_5*_invdx*H.get(4,j); temp+=COEFF_6*_invdx*H.get(5,j);
         dHdx.set(2, j, temp);
     }
 
@@ -233,16 +226,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int j = 0; j < U.n(); j++) {
         // i = nx-3
-        temp=_clx[0]*H.get(H.m()-6,j); temp+=_clx[1]*H.get(H.m()-5,j); temp+=_clx[2]*H.get(H.m()-4,j);
-        temp+=_clx[3]*H.get(H.m()-2,j); temp+=_clx[4]*H.get(H.m()-1,j); temp+=_clx[5]*H.get(0,j);
+        temp=COEFF_1*_invdx*H.get(H.m()-6,j); temp+=COEFF_2*_invdx*H.get(H.m()-5,j); temp+=COEFF_3*_invdx*H.get(H.m()-4,j);
+        temp+=COEFF_4*_invdx*H.get(H.m()-2,j); temp+=COEFF_5*_invdx*H.get(H.m()-1,j); temp+=COEFF_6*_invdx*H.get(0,j);
         dHdx.set(H.m()-3, j, temp);
         // i = nx-2
-        temp=_clx[0]*H.get(H.m()-5,j); temp+=_clx[1]*H.get(H.m()-4,j); temp+=_clx[2]*H.get(H.m()-3,j);
-        temp+=_clx[3]*H.get(H.m()-1,j); temp+=_clx[4]*H.get(0,j); temp+=_clx[5]*H.get(1,j);
+        temp=COEFF_1*_invdx*H.get(H.m()-5,j); temp+=COEFF_2*_invdx*H.get(H.m()-4,j); temp+=COEFF_3*_invdx*H.get(H.m()-3,j);
+        temp+=COEFF_4*_invdx*H.get(H.m()-1,j); temp+=COEFF_5*_invdx*H.get(0,j); temp+=COEFF_6*_invdx*H.get(1,j);
         dHdx.set(H.m()-2, j, temp);
         // i = nx-1
-        temp=_clx[0]*H.get(H.m()-4,j); temp+=_clx[1]*H.get(H.m()-3,j); temp+=_clx[2]*H.get(H.m()-2,j);
-        temp+=_clx[3]*H.get(0,j); temp+=_clx[4]*H.get(1,j); temp+=_clx[5]*H.get(2,j);
+        temp=COEFF_1*_invdx*H.get(H.m()-4,j); temp+=COEFF_2*_invdx*H.get(H.m()-3,j); temp+=COEFF_3*_invdx*H.get(H.m()-2,j);
+        temp+=COEFF_4*_invdx*H.get(0,j); temp+=COEFF_5*_invdx*H.get(1,j); temp+=COEFF_6*_invdx*H.get(2,j);
         dHdx.set(H.m()-1, j, temp);
     }
 
@@ -252,16 +245,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int i = 0; i < U.m(); i++) {
         // j = 0
-        temp=_cly[0]*U.get(i,U.n()-3); temp+=_cly[1]*U.get(i,U.n()-2); temp+=_cly[2]*U.get(i,U.n()-1);
-        temp+=_cly[3]*U.get(i,1); temp+=_cly[4]*U.get(i,2); temp+=_cly[5]*U.get(i,3);
+        temp=COEFF_1*_invdy*U.get(i,U.n()-3); temp+=COEFF_2*_invdy*U.get(i,U.n()-2); temp+=COEFF_3*_invdy*U.get(i,U.n()-1);
+        temp+=COEFF_4*_invdy*U.get(i,1); temp+=COEFF_5*_invdy*U.get(i,2); temp+=COEFF_6*_invdy*U.get(i,3);
         dUdy.set(i, 0, temp);
         // j = 1
-        temp=_cly[0]*U.get(i,U.n()-2); temp+=_cly[1]*U.get(i,U.n()-1); temp+=_cly[2]*U.get(i,0);
-        temp+=_cly[3]*U.get(i,2); temp+=_cly[4]*U.get(i,3); temp+=_cly[5]*U.get(i,4);
+        temp=COEFF_1*_invdy*U.get(i,U.n()-2); temp+=COEFF_2*_invdy*U.get(i,U.n()-1); temp+=COEFF_3*_invdy*U.get(i,0);
+        temp+=COEFF_4*_invdy*U.get(i,2); temp+=COEFF_5*_invdy*U.get(i,3); temp+=COEFF_6*_invdy*U.get(i,4);
         dUdy.set(i, 1, temp);
         // j = 2
-        temp=_cly[0]*U.get(i,U.n()-1); temp+=_cly[1]*U.get(i,0); temp+=_cly[2]*U.get(i,1);
-        temp+=_cly[3]*U.get(i,3); temp+=_cly[4]*U.get(i,4); temp+=_cly[5]*U.get(i,5);
+        temp=COEFF_1*_invdy*U.get(i,U.n()-1); temp+=COEFF_2*_invdy*U.get(i,0); temp+=COEFF_3*_invdy*U.get(i,1);
+        temp+=COEFF_4*_invdy*U.get(i,3); temp+=COEFF_5*_invdy*U.get(i,4); temp+=COEFF_6*_invdy*U.get(i,5);
         dUdy.set(i, 2, temp);
     }
 
@@ -269,16 +262,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int i = 0; i < U.m(); i++) {
         // j = ny-3
-        temp=_cly[0]*U.get(i,U.n()-6); temp+=_cly[1]*U.get(i,U.n()-5); temp+=_cly[2]*U.get(i,U.n()-4);
-        temp+=_cly[3]*U.get(i,U.n()-2); temp+=_cly[4]*U.get(i,U.n()-1); temp+=_cly[5]*U.get(i,0);
+        temp=COEFF_1*_invdy*U.get(i,U.n()-6); temp+=COEFF_2*_invdy*U.get(i,U.n()-5); temp+=COEFF_3*_invdy*U.get(i,U.n()-4);
+        temp+=COEFF_4*_invdy*U.get(i,U.n()-2); temp+=COEFF_5*_invdy*U.get(i,U.n()-1); temp+=COEFF_6*_invdy*U.get(i,0);
         dUdy.set(i, U.n()-3, temp);
         // j = ny-2
-        temp=_cly[0]*U.get(i,U.n()-5); temp+=_cly[1]*U.get(i,U.n()-4); temp+=_cly[2]*U.get(i,U.n()-3);
-        temp+=_cly[3]*U.get(i,U.n()-1); temp+=_cly[4]*U.get(i,0); temp+=_cly[5]*U.get(i,1);
+        temp=COEFF_1*_invdy*U.get(i,U.n()-5); temp+=COEFF_2*_invdy*U.get(i,U.n()-4); temp+=COEFF_3*_invdy*U.get(i,U.n()-3);
+        temp+=COEFF_4*_invdy*U.get(i,U.n()-1); temp+=COEFF_5*_invdy*U.get(i,0); temp+=COEFF_6*_invdy*U.get(i,1);
         dUdy.set(i, U.n()-2, temp);
         // j = ny-1
-        temp=_cly[0]*U.get(i,U.n()-4); temp+=_cly[1]*U.get(i,U.n()-3); temp+=_cly[2]*U.get(i,U.n()-2);
-        temp+=_cly[3]*U.get(i,0); temp+=_cly[4]*U.get(i,1); temp+=_cly[5]*U.get(i,2);
+        temp=COEFF_1*_invdy*U.get(i,U.n()-4); temp+=COEFF_2*_invdy*U.get(i,U.n()-3); temp+=COEFF_3*_invdy*U.get(i,U.n()-2);
+        temp+=COEFF_4*_invdy*U.get(i,0); temp+=COEFF_5*_invdy*U.get(i,1); temp+=COEFF_6*_invdy*U.get(i,2);
         dUdy.set(i, U.n()-1, temp);
     }
 
@@ -286,16 +279,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int i = 0; i < U.m(); i++) {
         // j = 0
-        temp=_cly[0]*V.get(i,V.n()-3); temp+=_cly[1]*V.get(i,V.n()-2); temp+=_cly[2]*V.get(i,V.n()-1);
-        temp+=_cly[3]*V.get(i,1); temp+=_cly[4]*V.get(i,2); temp+=_cly[5]*V.get(i,3);
+        temp=COEFF_1*_invdy*V.get(i,V.n()-3); temp+=COEFF_2*_invdy*V.get(i,V.n()-2); temp+=COEFF_3*_invdy*V.get(i,V.n()-1);
+        temp+=COEFF_4*_invdy*V.get(i,1); temp+=COEFF_5*_invdy*V.get(i,2); temp+=COEFF_6*_invdy*V.get(i,3);
         dVdy.set(i, 0, temp);
         // j = 1
-        temp=_cly[0]*V.get(i,V.n()-2); temp+=_cly[1]*V.get(i,V.n()-1); temp+=_cly[2]*V.get(i,0);
-        temp+=_cly[3]*V.get(i,2); temp+=_cly[4]*V.get(i,3); temp+=_cly[5]*V.get(i,4);
+        temp=COEFF_1*_invdy*V.get(i,V.n()-2); temp+=COEFF_2*_invdy*V.get(i,V.n()-1); temp+=COEFF_3*_invdy*V.get(i,0);
+        temp+=COEFF_4*_invdy*V.get(i,2); temp+=COEFF_5*_invdy*V.get(i,3); temp+=COEFF_6*_invdy*V.get(i,4);
         dVdy.set(i, 1, temp);
         // j = 2
-        temp=_cly[0]*V.get(i,V.n()-1); temp+=_cly[1]*V.get(i,0); temp+=_cly[2]*V.get(i,1);
-        temp+=_cly[3]*V.get(i,3); temp+=_cly[4]*V.get(i,4); temp+=_cly[5]*V.get(i,5);
+        temp=COEFF_1*_invdy*V.get(i,V.n()-1); temp+=COEFF_2*_invdy*V.get(i,0); temp+=COEFF_3*_invdy*V.get(i,1);
+        temp+=COEFF_4*_invdy*V.get(i,3); temp+=COEFF_5*_invdy*V.get(i,4); temp+=COEFF_6*_invdy*V.get(i,5);
         dVdy.set(i, 2, temp);
     }
 
@@ -303,16 +296,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int i = 0; i < U.m(); i++) {
         // j = ny-3
-        temp=_cly[0]*V.get(i,V.n()-6); temp+=_cly[1]*V.get(i,V.n()-5); temp+=_cly[2]*V.get(i,V.n()-4);
-        temp+=_cly[3]*V.get(i,V.n()-2); temp+=_cly[4]*V.get(i,V.n()-1); temp+=_cly[5]*V.get(i,0);
+        temp=COEFF_1*_invdy*V.get(i,V.n()-6); temp+=COEFF_2*_invdy*V.get(i,V.n()-5); temp+=COEFF_3*_invdy*V.get(i,V.n()-4);
+        temp+=COEFF_4*_invdy*V.get(i,V.n()-2); temp+=COEFF_5*_invdy*V.get(i,V.n()-1); temp+=COEFF_6*_invdy*V.get(i,0);
         dVdy.set(i, V.n()-3, temp);
         // j = ny-2
-        temp=_cly[0]*V.get(i,V.n()-5); temp+=_cly[1]*V.get(i,V.n()-4); temp+=_cly[2]*V.get(i,V.n()-3);
-        temp+=_cly[3]*V.get(i,V.n()-1); temp+=_cly[4]*V.get(i,0); temp+=_cly[5]*V.get(i,1);
+        temp=COEFF_1*_invdy*V.get(i,V.n()-5); temp+=COEFF_2*_invdy*V.get(i,V.n()-4); temp+=COEFF_3*_invdy*V.get(i,V.n()-3);
+        temp+=COEFF_4*_invdy*V.get(i,V.n()-1); temp+=COEFF_5*_invdy*V.get(i,0); temp+=COEFF_6*_invdy*V.get(i,1);
         dVdy.set(i, V.n()-2, temp);
         // j = ny-1
-        temp=_cly[0]*V.get(i,V.n()-4); temp+=_cly[1]*V.get(i,V.n()-3); temp+=_cly[2]*V.get(i,V.n()-2);
-        temp+=_cly[3]*V.get(i,0); temp+=_cly[4]*V.get(i,1); temp+=_cly[5]*V.get(i,2);
+        temp=COEFF_1*_invdy*V.get(i,V.n()-4); temp+=COEFF_2*_invdy*V.get(i,V.n()-3); temp+=COEFF_3*_invdy*V.get(i,V.n()-2);
+        temp+=COEFF_4*_invdy*V.get(i,0); temp+=COEFF_5*_invdy*V.get(i,1); temp+=COEFF_6*_invdy*V.get(i,2);
         dVdy.set(i, V.n()-1, temp);
     }
 
@@ -320,16 +313,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int i = 0; i < U.m(); i++) {
         // j = 0
-        temp=_cly[0]*H.get(i,H.n()-3); temp+=_cly[1]*H.get(i,H.n()-2); temp+=_cly[2]*H.get(i,H.n()-1);
-        temp+=_cly[3]*H.get(i,1); temp+=_cly[4]*H.get(i,2); temp+=_cly[5]*H.get(i,3);
+        temp=COEFF_1*_invdy*H.get(i,H.n()-3); temp+=COEFF_2*_invdy*H.get(i,H.n()-2); temp+=COEFF_3*_invdy*H.get(i,H.n()-1);
+        temp+=COEFF_4*_invdy*H.get(i,1); temp+=COEFF_5*_invdy*H.get(i,2); temp+=COEFF_6*_invdy*H.get(i,3);
         dHdy.set(i, 0, temp);
         // j = 1
-        temp=_cly[0]*H.get(i,H.n()-2); temp+=_cly[1]*H.get(i,H.n()-1); temp+=_cly[2]*H.get(i,0);
-        temp+=_cly[3]*H.get(i,2); temp+=_cly[4]*H.get(i,3); temp+=_cly[5]*H.get(i,4);
+        temp=COEFF_1*_invdy*H.get(i,H.n()-2); temp+=COEFF_2*_invdy*H.get(i,H.n()-1); temp+=COEFF_3*_invdy*H.get(i,0);
+        temp+=COEFF_4*_invdy*H.get(i,2); temp+=COEFF_5*_invdy*H.get(i,3); temp+=COEFF_6*_invdy*H.get(i,4);
         dHdy.set(i, 1, temp);
         // j = 2
-        temp=_cly[0]*H.get(i,H.n()-1); temp+=_cly[1]*H.get(i,0); temp+=_cly[2]*H.get(i,1);
-        temp+=_cly[3]*H.get(i,3); temp+=_cly[4]*H.get(i,4); temp+=_cly[5]*H.get(i,5);
+        temp=COEFF_1*_invdy*H.get(i,H.n()-1); temp+=COEFF_2*_invdy*H.get(i,0); temp+=COEFF_3*_invdy*H.get(i,1);
+        temp+=COEFF_4*_invdy*H.get(i,3); temp+=COEFF_5*_invdy*H.get(i,4); temp+=COEFF_6*_invdy*H.get(i,5);
         dHdy.set(i, 2, temp);
     }
 
@@ -337,16 +330,16 @@ void FiniteDifference::loop(
     #pragma omp for nowait schedule(static, CHUNK)
     for (int i = 0; i < U.m(); i++) {
         // j = ny-3
-        temp=_cly[0]*H.get(i,H.n()-6); temp+=_cly[1]*H.get(i,H.n()-5); temp+=_cly[2]*H.get(i,H.n()-4);
-        temp+=_cly[3]*H.get(i,H.n()-2); temp+=_cly[4]*H.get(i,H.n()-1); temp+=_cly[5]*H.get(i,0);
+        temp=COEFF_1*_invdy*H.get(i,H.n()-6); temp+=COEFF_2*_invdy*H.get(i,H.n()-5); temp+=COEFF_3*_invdy*H.get(i,H.n()-4);
+        temp+=COEFF_4*_invdy*H.get(i,H.n()-2); temp+=COEFF_5*_invdy*H.get(i,H.n()-1); temp+=COEFF_6*_invdy*H.get(i,0);
         dHdy.set(i, H.n()-3, temp);
         // j = ny-2
-        temp=_cly[0]*H.get(i,H.n()-5); temp+=_cly[1]*H.get(i,H.n()-4); temp+=_cly[2]*H.get(i,H.n()-3);
-        temp+=_cly[3]*H.get(i,H.n()-1); temp+=_cly[4]*H.get(i,0); temp+=_cly[5]*H.get(i,1);
+        temp=COEFF_1*_invdy*H.get(i,H.n()-5); temp+=COEFF_2*_invdy*H.get(i,H.n()-4); temp+=COEFF_3*_invdy*H.get(i,H.n()-3);
+        temp+=COEFF_4*_invdy*H.get(i,H.n()-1); temp+=COEFF_5*_invdy*H.get(i,0); temp+=COEFF_6*_invdy*H.get(i,1);
         dHdy.set(i, H.n()-2, temp);
         // j = ny-1
-        temp=_cly[0]*H.get(i,H.n()-4); temp+=_cly[1]*H.get(i,H.n()-3); temp+=_cly[2]*H.get(i,H.n()-2);
-        temp+=_cly[3]*H.get(i,0); temp+=_cly[4]*H.get(i,1); temp+=_cly[5]*H.get(i,2);
+        temp=COEFF_1*_invdy*H.get(i,H.n()-4); temp+=COEFF_2*_invdy*H.get(i,H.n()-3); temp+=COEFF_3*_invdy*H.get(i,H.n()-2);
+        temp+=COEFF_4*_invdy*H.get(i,0); temp+=COEFF_5*_invdy*H.get(i,1); temp+=COEFF_6*_invdy*H.get(i,2);
         dHdy.set(i, H.n()-1, temp);
     }
 
@@ -366,239 +359,201 @@ void FiniteDifference::blas(
     GeneralMatrix& dHdx,
     GeneralMatrix& dHdy
 ) {
+    #pragma omp parallel default(shared)
+    {
 
+    // dUdx
+    #pragma omp for nowait schedule(static)
+    for (int i = 0; i < U.n(); i++) {
+        // banded matrix
+        F77NAME(dgbmv)(
+            'N', _dx_d.n(), _dx_d.n(), _dx_d.kl(), _dx_d.ku(), 1.0, _dx_d.getPointer(0), _dx_d.ld(),
+            U.getPointer(i*U.m()), 1,
+            0.0, dUdx.getPointer(i*dUdx.m()), 1
+        );
+        // top right triangular matrix
+        F77NAME(dgemv)(
+            'N', _dx_t1.m(), _dx_t1.n(), 1.0, _dx_t1.getPointer(0), 3,
+            U.getPointer(U.m()-3 + i*U.m()), 1,
+            1.0, dUdx.getPointer(i*dUdx.m()), 1
+        );
+        // bottom left triangular matrix
+        F77NAME(dgemv)(
+            'N', _dx_t2.m(), _dx_t2.n(), 1.0, _dx_t2.getPointer(0), 3,
+            U.getPointer(i*U.m()), 1,
+            1.0, dUdx.getPointer(dUdx.m()-3 + i*dUdx.m()), 1
+        );
+    }
+
+    // dVdx
+    #pragma omp for nowait schedule(static)
+    for (int i = 0; i < V.n(); i++) {
+        // banded matrix
+        F77NAME(dgbmv)(
+            'N', _dx_d.n(), _dx_d.n(), _dx_d.kl(), _dx_d.ku(), 1.0, _dx_d.getPointer(0), _dx_d.ld(),
+            V.getPointer(i*V.m()), 1,
+            0.0, dVdx.getPointer(i*dVdx.m()), 1
+        );
+        // top right triangular matrix
+        F77NAME(dgemv)(
+            'N', _dx_t1.m(), _dx_t1.n(), 1.0, _dx_t1.getPointer(0), 3,
+            V.getPointer(V.m()-3 + i*V.m()), 1,
+            1.0, dVdx.getPointer(i*dVdx.m()), 1
+        );
+        // bottom left triangular matrix
+        F77NAME(dgemv)(
+            'N', _dx_t2.m(), _dx_t2.n(), 1.0, _dx_t2.getPointer(0), 3,
+            V.getPointer(i*V.m()), 1,
+            1.0, dVdx.getPointer(dVdx.m()-3 + i*dVdx.m()), 1
+        );
+    }
+
+    // dHdx
+    #pragma omp for nowait schedule(static)
+    for (int i = 0; i < H.n(); i++) {
+        // banded matrix
+        F77NAME(dgbmv)(
+            'N', _dx_d.n(), _dx_d.n(), _dx_d.kl(), _dx_d.ku(), 1.0, _dx_d.getPointer(0), _dx_d.ld(),
+            H.getPointer(i*H.m()), 1,
+            0.0, dHdx.getPointer(i*dHdx.m()), 1
+        );
+        // top right triangular matrix
+        F77NAME(dgemv)(
+            'N', _dx_t1.m(), _dx_t1.n(), 1.0, _dx_t1.getPointer(0), 3,
+            H.getPointer(H.m()-3 + i*H.m()), 1,
+            1.0, dHdx.getPointer(i*dHdx.m()), 1
+        );
+        // bottom left triangular matrix
+        F77NAME(dgemv)(
+            'N', _dx_t2.m(), _dx_t2.n(), 1.0, _dx_t2.getPointer(0), 3,
+            H.getPointer(i*H.m()), 1,
+            1.0, dHdx.getPointer(dHdx.m()-3 + i*dHdx.m()), 1
+        );
+    }
+
+    // dUdy
+    #pragma omp for nowait schedule(static)
+    for (int i = 0; i < U.m(); i++) {
+        // banded matrix
+        F77NAME(dgbmv)(
+            'N', _dy_d.n(), _dy_d.n(), _dy_d.kl(), _dy_d.ku(), 1.0, _dy_d.getPointer(0), _dy_d.ld(),
+            U.getPointer(i), U.m(),
+            0.0, dUdy.getPointer(i), dUdy.m()
+        );
+        // top right triangular matrix
+        F77NAME(dgemv)(
+            'N', _dy_t1.m(), _dy_t1.n(), 1.0, _dy_t1.getPointer(0), _dy_t1.m(),
+            U.getPointer(U.m() * (U.n()-3) + i), U.m(),
+            1.0, dUdy.getPointer(i), dUdy.m()
+        );
+        // bottom left triangular matrix
+        F77NAME(dgemv)(
+            'N', _dy_t2.m(), _dy_t2.n(), 1.0, _dy_t2.getPointer(0), _dy_t1.m(),
+            U.getPointer(i), U.m(),
+            1.0, dUdy.getPointer(U.m() * (U.n()-3) + i), dUdy.m()
+        );
+    }
+
+    // dVdy
+    #pragma omp for nowait schedule(static)
+    for (int i = 0; i < V.m(); i++) {
+        // banded matrix
+        F77NAME(dgbmv)(
+            'N', _dy_d.n(), _dy_d.n(), _dy_d.kl(), _dy_d.ku(), 1.0, _dy_d.getPointer(0), _dy_d.ld(),
+            V.getPointer(i), V.m(),
+            0.0, dVdy.getPointer(i), dVdy.m()
+        );
+        // top right triangular matrix
+        F77NAME(dgemv)(
+            'N', _dy_t1.m(), _dy_t1.n(), 1.0, _dy_t1.getPointer(0), _dy_t1.m(),
+            V.getPointer(V.m() * (V.n()-3) + i), V.m(),
+            1.0, dVdy.getPointer(i), dVdy.m()
+        );
+        // bottom left triangular matrix
+        F77NAME(dgemv)(
+            'N', _dy_t2.m(), _dy_t2.n(), 1.0, _dy_t2.getPointer(0), _dy_t1.m(),
+            V.getPointer(i), V.m(),
+            1.0, dVdy.getPointer(V.m() * (V.n()-3) + i), dVdy.m()
+        );
+    }
+
+    // dHdy
+    #pragma omp for nowait schedule(static)
+    for (int i = 0; i < H.m(); i++) {
+        // banded matrix
+        F77NAME(dgbmv)(
+            'N', _dy_d.n(), _dy_d.n(), _dy_d.kl(), _dy_d.ku(), 1.0, _dy_d.getPointer(0), _dy_d.ld(),
+            H.getPointer(i), H.m(),
+            0.0, dHdy.getPointer(i), dHdy.m()
+        );
+        // top right triangular matrix
+        F77NAME(dgemv)(
+            'N', _dy_t1.m(), _dy_t1.n(), 1.0, _dy_t1.getPointer(0), _dy_t1.m(),
+            H.getPointer(H.m() * (H.n()-3) + i), H.m(),
+            1.0, dHdy.getPointer(i), dHdy.m()
+        );
+        // bottom left triangular matrix
+        F77NAME(dgemv)(
+            'N', _dy_t2.m(), _dy_t2.n(), 1.0, _dy_t2.getPointer(0), _dy_t1.m(),
+            H.getPointer(i), H.m(),
+            1.0, dHdy.getPointer(H.m() * (H.n()-3) + i), dHdy.m()
+        );
+    }
+
+    } // omp parallel
 }
 
-// void FiniteDifference::_generateDx() {
-//     double a = 3.0 / 4.0 / _dx;
-//     double b = - 3.0 / 20.0 / _dx;
-//     double c = 1.0 / 60.0 / _dx;
+void FiniteDifference::_generateDx(const double dx) {
+    double a = 3.0 / 4.0 / dx;
+    double b = - 3.0 / 20.0 / dx;
+    double c = 1.0 / 60.0 / dx;
+    // arrays to initialize the central difference matrices
+    // banded matrix
+    double val[] = {
+        c, b, a,
+        0.0,
+        -a, -b, -c
+    };
+    // top right triangular matrix
+    double t1[] = { -c, 0., 0. , -b, -c, 0., -a, -b, -c };
+    // bottom left triangular matrix
+    double t2[] = { c, b, a, 0., c, b, 0., 0., c };
 
-//     // arrays to initialize the central difference matrices
-//     // banded matrix
-//     double val[] = {
-//         c, b, a,
-//         0.0,
-//         -a, -b, -c
-//     };
-//     // top right triangular matrix
-//     double t1[] = { -c, 0., 0. , -b, -c, 0., -a, -b, -c };
-//     // bottom left triangular matrix
-//     double t2[] = { c, b, a, 0., c, b, 0., 0., c };
+    // banded matrix
+    for (int j = 0; j < _dx_d.n(); j++)
+        for (int i = 0; i < _dx_d.ld(); i++)
+            _dx_d.set(i, j, val[i]);
+    // top right triangular matrix
+    for (int i = 0; i < _dx_t1.size(); i++)
+        _dx_t1[i] = t1[i];
+    // bottom left triangular matrix
+    for (int i = 0; i < _dx_t2.size(); i++)
+        _dx_t2[i] = t2[i];
+}
 
-//     // #pragma omp parallel default(shared)
-//     // {
-//     // #pragma omp sections
-//     // {
+void FiniteDifference::_generateDy(const double dy) {
+    double a = 3.0 / 4.0 / dy;
+    double b = - 3.0 / 20.0 / dy;
+    double c = 1.0 / 60.0 / dy;
+    // banded matrix
+    double val[] = {
+        c, b, a,
+        0.0,
+        -a, -b, -c
+    };
+    // top right triangular matrix
+    double t1[] = { -c, 0., 0. , -b, -c, 0., -a, -b, -c };
+    // bottom left triangular matrix
+    double t2[] = { c, b, a, 0., c, b, 0., 0., c };
 
-//     // banded matrix
-//     // #pragma omp parallel for
-//     for (int j = 0; j < _dx_d.n(); j++)
-//         for (int i = 0; i < _dx_d.ld(); i++)
-//             _dx_d.set(i, j, val[i]);
-
-//     // top right triangular matrix
-//     // #pragma omp section
-//     for (int i = 0; i < _dx_t1.size(); i++)
-//         _dx_t1[i] = t1[i];
-
-//     // bottom left triangular matrix
-//     // #pragma omp section
-//     for (int i = 0; i < _dx_t2.size(); i++)
-//         _dx_t2[i] = t2[i];
-
-//     // }
-//     // }
-// }
-
-// void FiniteDifference::_generateDy() {
-//     double a = 3.0 / 4.0 / _dy;
-//     double b = - 3.0 / 20.0 / _dy;
-//     double c = 1.0 / 60.0 / _dy;
-
-//     // banded matrix
-//     double val[] = {
-//         c, b, a,
-//         0.0,
-//         -a, -b, -c
-//     };
-//     // top right triangular matrix
-//     double t1[] = { -c, 0., 0. , -b, -c, 0., -a, -b, -c };
-//     // bottom left triangular matrix
-//     double t2[] = { c, b, a, 0., c, b, 0., 0., c };
-
-//     // #pragma omp parallel default(shared)
-//     // {
-//     // #pragma omp sections
-//     // {
-
-//     // banded matrix
-//     // #pragma omp parallel for
-//     for (int j = 0; j < _dy_d.n(); j++)
-//         for (int i = 0; i < _dy_d.ld(); i++)
-//             _dy_d.set(i, j, val[i]);
-
-//     // top right triangular matrix
-//     // #pragma omp section
-//     for (int i = 0; i < _dy_t1.size(); i++)
-//         _dy_t1[i] = t1[i];
-
-//     // bottom left triangular matrix
-//     // #pragma omp section
-//     for (int i = 0; i < _dy_t2.size(); i++)
-//         _dy_t2[i] = t2[i];
-
-//     // }
-//     // }
-// }
-
-// void FiniteDifference::_performWrtXLoop(const GeneralMatrix& A, GeneralMatrix& dAdx) {
-//     double a = 3.0 / 4.0 / _dx;
-//     double b = - 3.0 / 20.0 / _dx;
-//     double c = 1.0 / 60.0 / _dx;
-
-//     // #pragma omp parallel for // num_threads(10)
-//     for (int j = 0; j < A.n(); j++) {
-//         // i = 0
-//         dAdx.set(0, j, -c*A.get(A.m()-3,j) -b*A.get(A.m()-2,j) -a*A.get(A.m()-1,j)
-//             +a*A.get(1,j) +b*A.get(2,j) + c*A.get(3,j));
-
-//         // i = 1
-//         dAdx.set(1, j, -c*A.get(A.m()-2,j) -b*A.get(A.m()-1,j) -a*A.get(0,j)
-//             +a*A.get(2,j) +b*A.get(3,j) + c*A.get(4,j));
-
-//         // i = 2
-//         dAdx.set(2, j, -c*A.get(A.m()-1,j) -b*A.get(0,j) -a*A.get(1,j)
-//             +a*A.get(3,j) +b*A.get(4,j) + c*A.get(5,j));
-
-//         for (int i = 3; i < A.m()-3; i++) {
-//             dAdx.set(i, j, -c*A.get(i-3,j) -b*A.get(i-2,j) -a*A.get(i-1,j)
-//                 +a*A.get(i+1,j) +b*A.get(i+2,j) +c*A.get(i+3,j));
-//         }
-
-//         // i = nx-3
-//         dAdx.set(A.m()-3, j, -c*A.get(A.m()-6,j) -b*A.get(A.m()-5,j) -a*A.get(A.m()-4,j)
-//             +a*A.get(A.m()-2,j) +b*A.get(A.m()-1,j) +c*A.get(0,j));
-
-//         // i = nx-2
-//         dAdx.set(A.m()-2, j, -c*A.get(A.m()-5,j) -b*A.get(A.m()-4,j) -a*A.get(A.m()-3,j)
-//             +a*A.get(A.m()-1,j) +b*A.get(0,j) +c*A.get(1,j));
-
-//         // i = nx-1
-//         dAdx.set(A.m()-1, j, -c*A.get(A.m()-4,j) -b*A.get(A.m()-3,j) -a*A.get(A.m()-2,j)
-//             +a*A.get(0,j) +b*A.get(1,j) +c*A.get(2,j));
-//     }
-// }
-
-// void FiniteDifference::_performWrtYLoop(const GeneralMatrix& A, GeneralMatrix& dAdy) {
-//     double a = 3.0 / 4.0 / _dy;
-//     double b = - 3.0 / 20.0 / _dy;
-//     double c = 1.0 / 60.0 / _dy;
-
-//     // #pragma omp parallel for // num_threads(10)
-//     for (int i = 0; i < A.m(); i++) {
-//         // j = 0
-//         dAdy.set(i, 0, -c*A.get(i,A.n()-3) -b*A.get(i,A.n()-2) -a*A.get(i,A.n()-1)
-//             +a*A.get(i,1) +b*A.get(i,2) +c*A.get(i,3));
-
-//         // j = 1
-//         dAdy.set(i, 1, -c*A.get(i,A.n()-2) -b*A.get(i,A.n()-1) -a*A.get(i,0)
-//             +a*A.get(i,2) +b*A.get(i,3) +c*A.get(i,4));
-
-//         // j = 2
-//         dAdy.set(i, 2, -c*A.get(i,A.n()-1) -b*A.get(i,0) -a*A.get(i,1)
-//             +a*A.get(i,3) +b*A.get(i,4) +c*A.get(i,5));
-
-//         // j not depending on bc
-//         for (int j = 3; j < A.n()-3; j++) {
-//             dAdy.set(i, j, -c*A.get(i,j-3) -b*A.get(i,j-2) -a*A.get(i,j-1)
-//                 +a*A.get(i,j+1) +b*A.get(i,j+2) +c*A.get(i,j+3));
-//         }
-
-//         // j = ny-3
-//         dAdy.set(i, A.n()-3, -c*A.get(i,A.n()-6) -b*A.get(i,A.n()-5) -a*A.get(i,A.n()-4)
-//             +a*A.get(i,A.n()-2) +b*A.get(i,A.n()-1) + c*A.get(i,0));
-
-//         // j = ny-2
-//         dAdy.set(i, A.n()-2, -c*A.get(i,A.n()-5) -b*A.get(i,A.n()-4) -a*A.get(i,A.n()-3)
-//             +a*A.get(i,A.n()-1) +b*A.get(i,0) + c*A.get(i,1));
-
-//         // j = ny-1
-//         dAdy.set(i, A.n()-1, -c*A.get(i,A.n()-4) -b*A.get(i,A.n()-3) -a*A.get(i,A.n()-2)
-//             +a*A.get(i,0) +b*A.get(i,1) + c*A.get(i,2));
-//     }
-// }
-
-// void FiniteDifference::_performWrtXBlas(const GeneralMatrix& A, GeneralMatrix& dAdx) {
-//     // banded matrix
-//     for (int i = 0; i < A.n(); i++) {
-//         F77NAME(dgbmv)(
-//             'N', _dx_d.n(), _dx_d.n(), _dx_d.kl(), _dx_d.ku(), 1.0, _dx_d.getPointer(0), _dx_d.ld(),
-//             A.getPointer(i*A.m()), 1,
-//             0.0, dAdx.getPointer(i*dAdx.m()), 1
-//         );
-//     }
-
-//     // top right triangular matrix
-//     for (int i = 0; i < A.n(); i++) {
-//         F77NAME(dgemv)(
-//             'N', _dx_t1.m(), _dx_t1.n(), 1.0, _dx_t1.getPointer(0), 3,
-//             A.getPointer(A.m()-3 + i*A.m()), 1,
-//             1.0, dAdx.getPointer(i*dAdx.m()), 1
-//         );
-//     }
-
-//     // bottom left triangular matrix
-//     for (int i = 0; i < A.n(); i++) {
-//         F77NAME(dgemv)(
-//             'N', _dx_t2.m(), _dx_t2.n(), 1.0, _dx_t2.getPointer(0), 3,
-//             A.getPointer(i*A.m()), 1,
-//             1.0, dAdx.getPointer(dAdx.m()-3 + i*dAdx.m()), 1
-//         );
-//     }
-// }
-
-// void FiniteDifference::_performWrtYBlas(const GeneralMatrix& A, GeneralMatrix&dAdy) {
-//     // banded matrix
-//     for (int i = 0; i < A.m(); i++) {
-//         F77NAME(dgbmv)(
-//             'N', _dy_d.n(), _dy_d.n(), _dy_d.kl(), _dy_d.ku(), 1.0, _dy_d.getPointer(0), _dy_d.ld(),
-//             A.getPointer(i), A.m(),
-//             0.0, dAdy.getPointer(i), dAdy.m()
-//         );
-//     }
-
-//     // top right triangular matrix
-//     for (int i = 0; i < A.m(); i++) {
-//         F77NAME(dgemv)(
-//             'N', _dy_t1.m(), _dy_t1.n(), 1.0, _dy_t1.getPointer(0), _dy_t1.m(),
-//             A.getPointer(A.m() * (A.n()-3) + i), A.m(),
-//             1.0, dAdy.getPointer(i), dAdy.m()
-//         );
-//     }
-
-//     // bottom left triangular matrix
-//     for (int i = 0; i < A.m(); i++) {
-//         F77NAME(dgemv)(
-//             'N', _dy_t2.m(), _dy_t2.n(), 1.0, _dy_t2.getPointer(0), _dy_t1.m(),
-//             A.getPointer(i), A.m(),
-//             1.0, dAdy.getPointer(A.m() * (A.n()-3) + i), dAdy.m()
-//         );
-//     }
-// }
-
-// void FiniteDifference::performWrtX(const bool loopBlas, const GeneralMatrix& A, GeneralMatrix& dAdx) {
-//     if (loopBlas) {
-//         _performWrtXBlas(A, dAdx);
-//     } else {
-//         _performWrtXLoop(A, dAdx);
-//     }
-// }
-
-// void FiniteDifference::performWrtY(const bool loopBlas, const GeneralMatrix& A, GeneralMatrix& dAdy) {
-//     if (loopBlas) {
-//         _performWrtYBlas(A, dAdy);
-//     } else {
-//         _performWrtYLoop(A, dAdy);
-//     }
-// }
+    // banded matrix
+    for (int j = 0; j < _dy_d.n(); j++)
+        for (int i = 0; i < _dy_d.ld(); i++)
+            _dy_d.set(i, j, val[i]);
+    // top right triangular matrix
+    for (int i = 0; i < _dy_t1.size(); i++)
+        _dy_t1[i] = t1[i];
+    // bottom left triangular matrix
+    for (int i = 0; i < _dy_t2.size(); i++)
+        _dy_t2[i] = t2[i];
+}

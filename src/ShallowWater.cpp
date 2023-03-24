@@ -1,4 +1,5 @@
 #include "../include/ShallowWater.h"
+#define CONST_G 9.81
 
 ShallowWater::ShallowWater(
     const int nx, const int ny,
@@ -8,25 +9,24 @@ ShallowWater::ShallowWater(
     _dx(dx), _dy(dy),
     // grid
     _U(GeneralMatrix(nx, ny)), _V(GeneralMatrix(nx, ny)), _H(GeneralMatrix(nx, ny)),
+    // finite difference
     _fd(FiniteDifference(nx, ny, dx, dy))
 {
-    if (nx<2 || ny<2 ||
-        dx<0.0 || dy<0.0
-    ) throw std::invalid_argument("Invalid argument.");
+    if (nx<2 || ny<2 || dx<0.0 || dy<0.0)
+        throw std::invalid_argument("Invalid argument.");
 }
 
-ShallowWater::~ShallowWater() {}
-
 void ShallowWater::setInitialConditions(const int ic) {
+    // set U and V
     for (int id = 0; id < _U.size(); id++) {
         _U[id] = 0.0;
         _V[id] = 0.0;
     }
 
-    // set h to the initial surface height for each test cases
+    // set H
     switch (ic) {
+        // plane waves propagating in x
         case 1:
-            // plane waves propagating in x
             for (int i = 0; i<_H.m(); i++) {
                 double x = i * _dx;
                 x -= 50.0;
@@ -38,8 +38,8 @@ void ShallowWater::setInitialConditions(const int ic) {
             }
             break;
 
+        // plane waves propagating in y
         case 2:
-            // plane waves propagating in y
             for (int j=0; j<_H.n(); j++) {
                 double y = j * _dy;
                 y -= 50.0;
@@ -51,8 +51,8 @@ void ShallowWater::setInitialConditions(const int ic) {
             }
             break;
 
+        // single droplet
         case 3:
-            // single droplet
             for (int j = 0; j < _H.n(); j++) {
                 for (int i = 0; i < _H.m(); i++) {
                     double x = _dx * i; double y = _dy * j;
@@ -64,8 +64,8 @@ void ShallowWater::setInitialConditions(const int ic) {
             }
             break;
 
+        // double droplet
         case 4:
-            // double droplet
             for (int j = 0; j < _H.n(); j++) {
                 for (int i = 0; i < _H.m(); i++) {
                     double x = _dx * i; double y = _dy * j;
@@ -77,6 +77,7 @@ void ShallowWater::setInitialConditions(const int ic) {
             }
             break;
 
+        // handle invalid initial condition
         default:
             throw std::invalid_argument("Invalid initial condition");
             break;
@@ -84,50 +85,50 @@ void ShallowWater::setInitialConditions(const int ic) {
 }
 
 void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const double t) {
+    if (dt < 0.0 || t < 0.0)
+        throw std::invalid_argument("Invalid argument.");
+
+    const int n = _U.size(); // number of points
+    const int numIter = (int)(t / dt) + 1; // number of steps
     // finite difference
     GeneralMatrix dUdx(_U.m(), _U.n());
     GeneralMatrix dUdy(_U.m(), _U.n());
-    GeneralMatrix dVdx(_U.m(), _U.n());
-    GeneralMatrix dVdy(_U.m(), _U.n());
-    GeneralMatrix dHdx(_U.m(), _U.n());
-    GeneralMatrix dHdy(_U.m(), _U.n());
-
-    // runge kutta U
+    GeneralMatrix dVdx(_V.m(), _V.n());
+    GeneralMatrix dVdy(_V.m(), _V.n());
+    GeneralMatrix dHdx(_H.m(), _H.n());
+    GeneralMatrix dHdy(_H.m(), _H.n());
+    // Runge Kutta U
     GeneralMatrix k1U(_U.m(), _U.n());
     GeneralMatrix k2U(_U.m(), _U.n());
     GeneralMatrix k3U(_U.m(), _U.n());
     GeneralMatrix k4U(_U.m(), _U.n());
-
-    // runge kutta V
-    GeneralMatrix k1V(_U.m(), _U.n());
-    GeneralMatrix k2V(_U.m(), _U.n());
-    GeneralMatrix k3V(_U.m(), _U.n());
-    GeneralMatrix k4V(_U.m(), _U.n());
-
-    // runge kutta H
-    GeneralMatrix k1H(_U.m(), _U.n());
-    GeneralMatrix k2H(_U.m(), _U.n());
-    GeneralMatrix k3H(_U.m(), _U.n());
-    GeneralMatrix k4H(_U.m(), _U.n());
-
+    // Runge Kutta V
+    GeneralMatrix k1V(_V.m(), _V.n());
+    GeneralMatrix k2V(_V.m(), _V.n());
+    GeneralMatrix k3V(_V.m(), _V.n());
+    GeneralMatrix k4V(_V.m(), _V.n());
+    // Runge Kutta H
+    GeneralMatrix k1H(_H.m(), _H.n());
+    GeneralMatrix k2H(_H.m(), _H.n());
+    GeneralMatrix k3H(_H.m(), _H.n());
+    GeneralMatrix k4H(_H.m(), _H.n());
     // temporary variables
     GeneralMatrix tU(_U.m(), _U.n());
-    GeneralMatrix tV(_U.m(), _U.n());
-    GeneralMatrix tH(_U.m(), _U.n());
+    GeneralMatrix tV(_V.m(), _V.n());
+    GeneralMatrix tH(_H.m(), _H.n());
 
-    const int n = _U.size();
-    const double _g = 9.81;
-    double ct = 0;
-    while (ct < t) {
+    // #pragma omp parallel
+    // {
+
+    for (int iter = 0; iter < numIter; iter++) {
         //--------- k1
-        if (loopBlas)
-            _fd.blas(_U, _V, _H, dUdx, dUdy, dVdx, dVdy, dHdx, dHdy);
-        else
-            _fd.loop(_U, _V, _H, dUdx, dUdy, dVdx, dVdy, dHdx, dHdy);
-        // k1
+        // finite difference
+        if (loopBlas) { _fd.blas(_U, _V, _H, dUdx, dUdy, dVdx, dVdy, dHdx, dHdy); }
+        else { _fd.loop(_U, _V, _H, dUdx, dUdy, dVdx, dVdy, dHdx, dHdy); }
+        // compute k1
         for (int i = 0; i < n; i++) {
-            k1U[i] = - (_U[i]*dUdx[i] + _V[i]*dUdy[i] + _g*dHdx[i]);
-            k1V[i] = - (_U[i]*dVdx[i] + _V[i]*dVdy[i] + _g*dHdy[i]);
+            k1U[i] = - (_U[i]*dUdx[i] + _V[i]*dUdy[i] + CONST_G*dHdx[i]);
+            k1V[i] = - (_U[i]*dVdx[i] + _V[i]*dVdy[i] + CONST_G*dHdy[i]);
             k1H[i] = - (_U[i]*dHdx[i] + _H[i]*dUdx[i] + _V[i]*dHdy[i] + _H[i]*dVdy[i]);
         }
 
@@ -138,15 +139,15 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
             tV[i] = _V[i] + 0.5*dt*k1V[i];
             tH[i] = _H[i] + 0.5*dt*k1H[i];
         }
-        // central difference
+        // finite difference
         if (loopBlas)
             _fd.blas(tU, tV, tH, dUdx, dUdy, dVdx, dVdy, dHdx, dHdy);
         else
             _fd.loop(tU, tV, tH, dUdx, dUdy, dVdx, dVdy, dHdx, dHdy);
-        // k2
+        // compute k2
         for (int i = 0; i < n; i++) {
-            k2U[i] = - (tU[i]*dUdx[i] + tV[i]*dUdy[i] + _g*dHdx[i]);
-            k2V[i] = - (tU[i]*dVdx[i] + tV[i]*dVdy[i] + _g*dHdy[i]);
+            k2U[i] = - (tU[i]*dUdx[i] + tV[i]*dUdy[i] + CONST_G*dHdx[i]);
+            k2V[i] = - (tU[i]*dVdx[i] + tV[i]*dVdy[i] + CONST_G*dHdy[i]);
             k2H[i] = - (tU[i]*dHdx[i] + tH[i]*dUdx[i] + tV[i]*dHdy[i] + tH[i]*dVdy[i]);
         }
 
@@ -164,8 +165,8 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
             _fd.loop(tU, tV, tH, dUdx, dUdy, dVdx, dVdy, dHdx, dHdy);
         // k3
         for (int i = 0; i < n; i++) {
-            k3U[i] = - (tU[i]*dUdx[i] + tV[i]*dUdy[i] + _g*dHdx[i]);
-            k3V[i] = - (tU[i]*dVdx[i] + tV[i]*dVdy[i] + _g*dHdy[i]);
+            k3U[i] = - (tU[i]*dUdx[i] + tV[i]*dUdy[i] + CONST_G*dHdx[i]);
+            k3V[i] = - (tU[i]*dVdx[i] + tV[i]*dVdy[i] + CONST_G*dHdy[i]);
             k3H[i] = - (tU[i]*dHdx[i] + tH[i]*dUdx[i] + tV[i]*dHdy[i] + tH[i]*dVdy[i]);
         }
 
@@ -183,8 +184,8 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
             _fd.loop(tU, tV, tH, dUdx, dUdy, dVdx, dVdy, dHdx, dHdy);
         // k4
         for (int i = 0; i < n; i++) {
-            k4U[i] = - (tU[i]*dUdx[i] + tV[i]*dUdy[i] + _g*dHdx[i]);
-            k4V[i] = - (tU[i]*dVdx[i] + tV[i]*dVdy[i] + _g*dHdy[i]);
+            k4U[i] = - (tU[i]*dUdx[i] + tV[i]*dUdy[i] + CONST_G*dHdx[i]);
+            k4V[i] = - (tU[i]*dVdx[i] + tV[i]*dVdy[i] + CONST_G*dHdy[i]);
             k4H[i] = - (tU[i]*dHdx[i] + tH[i]*dUdx[i] + tV[i]*dHdy[i] + tH[i]*dVdy[i]);
         }
 
@@ -194,15 +195,14 @@ void ShallowWater::timeIntegrate(const bool loopBlas, const double dt, const dou
             _V[i] += (k1V[i] + 2.0*k2V[i] + 2.0*k3V[i] + k4V[i]) *dt / 6.0;
             _H[i] += (k1H[i] + 2.0*k2H[i] + 2.0*k3H[i] + k4H[i]) *dt / 6.0;
         }
-
-        ct += dt;
     }
+
+    // } // omp parallel
 }
 
 void ShallowWater::exportData(const std::string& fname) {
     std::ofstream file;
     file.open(fname);
-
     for (int j = 0; j < _U.n(); j++) {
         double y = j * _dy;
         for (int i = 0; i < _U.m(); i++) {
@@ -214,41 +214,5 @@ void ShallowWater::exportData(const std::string& fname) {
         }
         file << std::endl;
     }
-
-    file.close();
-}
-
-void ShallowWater::test() {
-    setInitialConditions(1);
-    std::string fname("output.txt");
-    std::ofstream file;
-    file.open(fname);
-
-    for (int j = 0; j < _H.n(); j++) {
-        for (int i = 0; i < _H.m(); i++) {
-            _V.set(i, j, 2.0*j);
-        }
-    }
-
-    GeneralMatrix dUdx(_U.m(), _U.n());
-    GeneralMatrix dUdy(_U.m(), _U.n());
-    GeneralMatrix dVdx(_U.m(), _U.n());
-    GeneralMatrix dVdy(_U.m(), _U.n());
-    GeneralMatrix dHdx(_U.m(), _U.n());
-    GeneralMatrix dHdy(_U.m(), _U.n());
-    _fd.loop(_U, _V, _H, dUdx, dUdy, dVdx, dVdy, dHdx, dHdy);
-
-    for (int j = 0; j < _H.n(); j++) {
-        double y = j * _dy;
-        for (int i = 0; i < _H.m(); i++) {
-            double x = i * _dx;
-            file << x << " " << y << " ";
-            file << _U.get(i, j) << " ";
-            file << _V.get(i, j) << " ";
-            file << dVdy.get(i, j) << std::endl;
-        }
-        file << std::endl;
-    }
-
     file.close();
 }
