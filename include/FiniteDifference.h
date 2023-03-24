@@ -9,11 +9,8 @@
 class FiniteDifference {
     private:
         // variables for the loop implementation
-        const double _invdx;
-        const double _invdy;
-        // loop
-        const double _clx[6];
-        const double _cly[6];
+        const double _cx1, _cx2, _cx3, _cx4, _cx5, _cx6;
+        const double _cy1, _cy2, _cy3, _cy4, _cy5, _cy6;
 
         // variables for the blas implementation
         // blas wrt x
